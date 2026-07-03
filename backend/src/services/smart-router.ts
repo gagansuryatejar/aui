@@ -323,12 +323,79 @@ export async function executeChat(
   throw new Error('All models exhausted. Please try again in a few minutes.');
 }
 
+// ── Image Generation Intent Routing ───────────────────────
+
+function isImageGenerationRequest(text: string): { isImage: boolean; prompt: string } {
+  const clean = text.trim();
+  
+  const prefixes = [
+    /^\/image\s+(.+)$/i,
+    /^\/imagine\s+(.+)$/i,
+    /^generate\s+an?\s+image\s+of\s+(.+)$/i,
+    /^create\s+an?\s+image\s+of\s+(.+)$/i,
+    /^draw\s+an?\s+image\s+of\s+(.+)$/i,
+    /^draw\s+(.+)$/i,
+    /^paint\s+(.+)$/i,
+    /^create\s+a\s+picture\s+of\s+(.+)$/i,
+    /^generate\s+a\s+picture\s+of\s+(.+)$/i
+  ];
+  
+  for (const regex of prefixes) {
+    const match = clean.match(regex);
+    if (match && match[1]) {
+      return { isImage: true, prompt: match[1].trim() };
+    }
+  }
+
+  // Also match "image of a cat" style
+  if (/^(?:image|picture|drawing|painting)\s+of\s+(.+)$/i.test(clean)) {
+    const match = clean.match(/^(?:image|picture|drawing|painting)\s+of\s+(.+)$/i);
+    return { isImage: true, prompt: match![1].trim() };
+  }
+  
+  return { isImage: false, prompt: '' };
+}
+
 // ── Execute streaming with automatic fallback ─────────────
 
 export async function* executeChatStream(
   messages: ChatMessage[],
   webSearchRequested?: boolean,
 ): AsyncGenerator<StreamChunk & { provider?: string; model?: string }> {
+  // Check for image generation intent first
+  const lastUserMsg = messages.filter((m) => m.role === 'user').pop();
+  if (lastUserMsg) {
+    const imgCheck = isImageGenerationRequest(lastUserMsg.content);
+    if (imgCheck.isImage) {
+      logger.info(`🎨 Smart Router: Intercepted image generation request: "${imgCheck.prompt}"`);
+      
+      yield {
+        type: 'metadata' as StreamChunk['type'],
+        content: '',
+        metadata: { provider: 'Pollinations AI', model: 'Flux / Stable Diffusion' }
+      };
+
+      yield {
+        type: 'text' as StreamChunk['type'],
+        content: `🎨 **Generating image for prompt:** *"${imgCheck.prompt}"*...\n\n`
+      };
+
+      // Add a small delay for premium effect
+      await new Promise((r) => setTimeout(r, 1200));
+
+      const seed = Math.floor(Math.random() * 1000000);
+      const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(imgCheck.prompt)}?width=1024&height=1024&nologo=true&seed=${seed}`;
+
+      yield {
+        type: 'text' as StreamChunk['type'],
+        content: `Here is your generated image:\n\n![${imgCheck.prompt}](${imageUrl})`
+      };
+
+      yield { type: 'done' as StreamChunk['type'], content: '' };
+      return;
+    }
+  }
+
   const decision = routeRequest(messages);
   const attempts = [
     { provider: decision.provider, model: decision.model },
