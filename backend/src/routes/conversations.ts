@@ -1,5 +1,5 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
-import { authMiddleware } from '../middleware/auth.js';
+import { authMiddleware, optionalAuth } from '../middleware/auth.js';
 import { prisma } from '../database/client.js';
 import type { ApiResponse } from '../types/index.js';
 
@@ -7,9 +7,16 @@ export async function conversationRoutes(app: FastifyInstance): Promise<void> {
   // ── List conversations ─────────────────────────────
   app.get(
     '/api/conversations',
-    { preHandler: [authMiddleware] },
+    { preHandler: [optionalAuth] },
     async (request: FastifyRequest, reply) => {
-      const userId = request.user!.userId;
+      const userId = request.user?.userId;
+      if (!userId) {
+        return reply.send({
+          success: true,
+          data: [],
+        } satisfies ApiResponse);
+      }
+
       const conversations = await prisma.conversation.findMany({
         where: { userId },
         orderBy: { updatedAt: 'desc' },
@@ -126,9 +133,13 @@ export async function conversationRoutes(app: FastifyInstance): Promise<void> {
   // ── Folders ────────────────────────────────────────
   app.get(
     '/api/folders',
-    { preHandler: [authMiddleware] },
+    { preHandler: [optionalAuth] },
     async (request: FastifyRequest, reply) => {
-      const userId = request.user!.userId;
+      const userId = request.user?.userId;
+      if (!userId) {
+        return reply.send({ success: true, data: [] } satisfies ApiResponse);
+      }
+
       const folders = await prisma.folder.findMany({
         where: { userId },
         orderBy: { name: 'asc' },
