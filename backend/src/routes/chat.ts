@@ -1,7 +1,7 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { v4 as uuidv4 } from 'uuid';
 import { executeChatStream } from '../services/smart-router.js';
-import { authMiddleware } from '../middleware/auth.js';
+import { optionalAuth } from '../middleware/auth.js';
 import { prisma } from '../database/client.js';
 import { logger } from '../services/logger.js';
 import type { ChatMessage } from '../types/index.js';
@@ -10,7 +10,7 @@ export async function chatRoutes(app: FastifyInstance): Promise<void> {
   // ── Streaming chat endpoint (SSE) ────────────────────
   app.post(
     '/api/chat',
-    { preHandler: [authMiddleware] },
+    { preHandler: [optionalAuth] },
     async (request: FastifyRequest, reply) => {
       const body = request.body as {
         conversationId?: string;
@@ -18,7 +18,7 @@ export async function chatRoutes(app: FastifyInstance): Promise<void> {
         webSearch?: boolean;
       };
 
-      const userId = request.user!.userId;
+      const userId = request.user?.userId;
       const messages = body.messages || [];
 
       if (!messages.length) {
@@ -31,24 +31,26 @@ export async function chatRoutes(app: FastifyInstance): Promise<void> {
       // Get or create conversation
       let conversationId = body.conversationId;
       if (!conversationId) {
-        // Create a new conversation
-        const firstUserMsg = messages.find((m) => m.role === 'user');
-        const title =
-          firstUserMsg?.content.slice(0, 80) || 'New Chat';
+        conversationId = uuidv4();
+        if (userId) {
+          // Create a new conversation in database for signed-in users
+          const firstUserMsg = messages.find((m) => m.role === 'user');
+          const title = firstUserMsg?.content.slice(0, 80) || 'New Chat';
 
-        const conversation = await prisma.conversation.create({
-          data: {
-            id: uuidv4(),
-            userId,
-            title,
-          },
-        });
-        conversationId = conversation.id;
+          const conversation = await prisma.conversation.create({
+            data: {
+              id: conversationId,
+              userId,
+              title,
+            },
+          });
+          conversationId = conversation.id;
+        }
       }
 
-      // Store the user message
+      // Store the user message for signed-in users
       const lastUserMsg = messages[messages.length - 1];
-      if (lastUserMsg?.role === 'user') {
+      if (userId && lastUserMsg?.role === 'user') {
         await prisma.message.create({
           data: {
             id: lastUserMsg.id || uuidv4(),
@@ -119,8 +121,8 @@ export async function chatRoutes(app: FastifyInstance): Promise<void> {
         );
       }
 
-      // Store assistant message
-      if (fullContent) {
+      // Store assistant message for signed-in users
+      if (userId && fullContent) {
         const latencyMs = Date.now() - startTime;
         await prisma.message.create({
           data: {
