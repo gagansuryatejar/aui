@@ -3,6 +3,7 @@ import { BaseProvider } from './base.js';
 import { GoogleProvider } from './google.js';
 import { GroqProvider } from './groq.js';
 import { OpenRouterProvider } from './openrouter.js';
+import { ZenMuxProvider } from './zenmux.js';
 import { logger } from '../services/logger.js';
 
 /**
@@ -12,6 +13,7 @@ import { logger } from '../services/logger.js';
  *   1. Google Gemini  – best free tier (1M tokens/min)
  *   2. Groq           – fastest inference (Llama/Mixtral)
  *   3. OpenRouter      – 18+ free models as fallbacks
+ *   4. ZenMux         – 4 free models including Sonnet 5
  *
  * When one model runs out of tokens, the Smart Router 
  * automatically falls back to the next provider/model.
@@ -40,6 +42,12 @@ export function initProviders(): void {
   if (config.openrouterApiKey) {
     registry.set('openrouter', new OpenRouterProvider(config.openrouterApiKey));
     logger.info('✅ Registered provider: OpenRouter (Free models)');
+  }
+
+  // ZenMux (FREE models)
+  if (config.zenmuxApiKey) {
+    registry.set('zenmux', new ZenMuxProvider(config.zenmuxApiKey));
+    logger.info('✅ Registered provider: ZenMux (Free)');
   }
 
   if (registry.size === 0) {

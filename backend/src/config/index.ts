@@ -18,6 +18,7 @@ export const config = {
   groqApiKey: process.env.GROQ_API_KEY || '',
   cohereApiKey: process.env.COHERE_API_KEY || '',
   openrouterApiKey: process.env.OPENROUTER_API_KEY || '',
+  zenmuxApiKey: process.env.ZENMUX_API_KEY || '',
 
   // Web Search
   tavilyApiKey: process.env.TAVILY_API_KEY || '',

@@ -192,9 +192,10 @@ function buildCandidateList(analysis: RequestAnalysis): Array<{ provider: BasePr
       // Category match bonus
       if (model.tags.includes(analysis.category)) score += 20;
 
-      // Provider priority: google > groq > openrouter
+      // Provider priority: google > groq > zenmux > openrouter
       if (provider.name === 'google') score += 15;
       else if (provider.name === 'groq') score += 10;
+      else if (provider.name === 'zenmux') score += 8;
       else if (provider.name === 'openrouter') score += 5;
 
       // Default provider bonus
