@@ -12,6 +12,7 @@ import type {
 import { healthCache } from './cache.js';
 import { logger } from './logger.js';
 import { webSearch, formatSearchContext, isSearchConfigured } from './web-search.js';
+import { prisma } from '../database/client.js';
 
 // ── Token exhaustion / error pattern detection ────────────
 
@@ -173,12 +174,18 @@ function isModelHealthy(providerName: string, modelId: string): boolean {
   return true;
 }
 
-function buildCandidateList(analysis: RequestAnalysis): Array<{ provider: BaseProvider; modelId: string; score: number }> {
+function buildCandidateList(
+  analysis: RequestAnalysis,
+  disabledModelIds: Set<string>
+): Array<{ provider: BaseProvider; modelId: string; score: number }> {
   const providers = getConfiguredProviders();
   const candidates: Array<{ provider: BaseProvider; modelId: string; score: number }> = [];
 
   for (const provider of providers) {
     for (const model of provider.models) {
+      // Skip if model is disabled by admin
+      if (disabledModelIds.has(model.id)) continue;
+
       // Skip if model doesn't meet requirements
       if (analysis.requiresVision && !model.supportsVision) continue;
       if (analysis.estimatedTokens > model.contextWindow * 0.9) continue;
@@ -228,9 +235,9 @@ function buildCandidateList(analysis: RequestAnalysis): Array<{ provider: BasePr
 
 // ── Route decision ────────────────────────────────────────
 
-export function routeRequest(messages: ChatMessage[]): RouteDecision {
+export function routeRequest(messages: ChatMessage[], disabledModelIds: Set<string>): RouteDecision {
   const analysis = analyzeRequest(messages);
-  const candidates = buildCandidateList(analysis);
+  const candidates = buildCandidateList(analysis, disabledModelIds);
 
   if (candidates.length === 0) {
     // Absolute fallback
@@ -263,7 +270,10 @@ export function routeRequest(messages: ChatMessage[]): RouteDecision {
 export async function executeChat(
   messages: ChatMessage[],
 ): Promise<{ content: string; provider: string; model: string; usage?: TokenUsage }> {
-  const decision = routeRequest(messages);
+  const disabledStatuses = await prisma.modelStatus.findMany({ where: { enabled: false } });
+  const disabledModelIds = new Set(disabledStatuses.map((s) => s.modelId));
+
+  const decision = routeRequest(messages, disabledModelIds);
   const attempts = [
     { provider: decision.provider, model: decision.model },
     ...decision.fallbacks,
@@ -397,7 +407,10 @@ export async function* executeChatStream(
     }
   }
 
-  const decision = routeRequest(messages);
+  const disabledStatuses = await prisma.modelStatus.findMany({ where: { enabled: false } });
+  const disabledModelIds = new Set(disabledStatuses.map((s) => s.modelId));
+
+  const decision = routeRequest(messages, disabledModelIds);
   const attempts = [
     { provider: decision.provider, model: decision.model },
     ...decision.fallbacks,

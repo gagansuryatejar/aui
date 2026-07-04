@@ -14,15 +14,20 @@ import {
   Sun,
   Monitor,
   Sparkles,
+  Sliders,
 } from 'lucide-react';
 import { useUIStore } from '@/store/ui-store';
 import type { Theme } from '@/types';
+import { apiGet, apiPost } from '@/lib/api';
 
-type Tab = 'general' | 'appearance' | 'shortcuts' | 'account' | 'about';
+type Tab = 'general' | 'appearance' | 'shortcuts' | 'account' | 'about' | 'admin';
 
 export default function SettingsModal() {
   const { settingsOpen, setSettingsOpen, theme, setTheme, user } = useUIStore();
   const [activeTab, setActiveTab] = useState<Tab>('general');
+  const [models, setModels] = useState<any[]>([]);
+  const [loadingModels, setLoadingModels] = useState(false);
+  const [errorModels, setErrorModels] = useState<string | null>(null);
 
   if (!settingsOpen) return null;
 
@@ -34,6 +39,10 @@ export default function SettingsModal() {
     { id: 'about', label: 'About', icon: <Info size={16} /> },
   ];
 
+  if (user?.role === 'admin') {
+    tabs.push({ id: 'admin', label: 'Admin Panel', icon: <Sliders size={16} /> });
+  }
+
   const shortcuts = [
     { keys: ['Ctrl', 'N'], action: 'New chat' },
     { keys: ['Ctrl', 'B'], action: 'Toggle sidebar' },
@@ -44,6 +53,46 @@ export default function SettingsModal() {
     { keys: ['Shift', 'Enter'], action: 'New line' },
     { keys: ['Escape'], action: 'Stop generating / Close modal' },
   ];
+
+  React.useEffect(() => {
+    if (activeTab === 'admin' && settingsOpen) {
+      const loadModels = async () => {
+        setLoadingModels(true);
+        setErrorModels(null);
+        try {
+          const data = await apiGet<any[]>('/api/admin/models');
+          setModels(data);
+        } catch (err: any) {
+          setErrorModels(err.message || 'Failed to load models');
+        } finally {
+          setLoadingModels(false);
+        }
+      };
+      loadModels();
+    }
+  }, [activeTab, settingsOpen]);
+
+  const handleToggleModel = async (modelId: string, currentEnabled: boolean) => {
+    setModels((prev) =>
+      prev.map((m) => (m.id === modelId ? { ...m, enabled: !currentEnabled } : m))
+    );
+
+    try {
+      await apiPost('/api/admin/models/toggle', { modelId, enabled: !currentEnabled });
+    } catch (err: any) {
+      setModels((prev) =>
+        prev.map((m) => (m.id === modelId ? { ...m, enabled: currentEnabled } : m))
+      );
+      alert(err.message || 'Failed to toggle model');
+    }
+  };
+
+  const groupedModels = models.reduce((acc: Record<string, any[]>, model) => {
+    const key = model.providerDisplayName || model.provider;
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(model);
+    return acc;
+  }, {});
 
   return (
     <AnimatePresence>
@@ -497,6 +546,82 @@ export default function SettingsModal() {
                       An intelligent AI chat platform with multi-provider
                       support, automatic model routing, and seamless fallbacks.
                     </p>
+                  </div>
+                )}
+
+                {activeTab === 'admin' && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                    <div style={{ borderBottom: '1px solid var(--border-primary)', paddingBottom: '12px' }}>
+                      <h3 style={{ fontSize: '0.9375rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                        Model Toggles
+                      </h3>
+                      <p style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', marginTop: '2px' }}>
+                        Enable or disable AI models globally in the application selection dropdown and routing list.
+                      </p>
+                    </div>
+
+                    {loadingModels && (
+                      <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+                        Loading models...
+                      </div>
+                    )}
+
+                    {errorModels && (
+                      <div style={{ padding: '12px', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', borderRadius: 'var(--radius-sm)', fontSize: '0.8125rem' }}>
+                        {errorModels}
+                      </div>
+                    )}
+
+                    {!loadingModels && !errorModels && Object.entries(groupedModels).map(([providerName, providerModels]) => (
+                      <div key={providerName} style={{ display: 'flex', flexDirection: 'column', gap: '12px', paddingBottom: '8px' }}>
+                        <h4 style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--brand-primary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                          {providerName}
+                        </h4>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', background: 'var(--bg-secondary)', padding: '12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-primary)' }}>
+                          {(providerModels as any[]).map((model) => (
+                            <div key={model.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                              <div>
+                                <div style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-primary)' }}>
+                                  {model.name}
+                                </div>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', fontFamily: 'monospace' }}>
+                                  {model.id}
+                                </div>
+                              </div>
+                              <button
+                                onClick={() => handleToggleModel(model.id, model.enabled)}
+                                style={{
+                                  position: 'relative',
+                                  width: 44,
+                                  height: 24,
+                                  borderRadius: 'var(--radius-full)',
+                                  border: 'none',
+                                  background: model.enabled ? 'var(--brand-primary)' : 'var(--bg-hover)',
+                                  cursor: 'pointer',
+                                  transition: 'background var(--transition-fast)',
+                                  flexShrink: 0,
+                                }}
+                              >
+                                <motion.div
+                                  animate={{ x: model.enabled ? 20 : 0 }}
+                                  transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                                  style={{
+                                    position: 'absolute',
+                                    top: 2,
+                                    left: 2,
+                                    width: 20,
+                                    height: 20,
+                                    borderRadius: 'var(--radius-full)',
+                                    background: 'white',
+                                    boxShadow: 'var(--shadow-sm)',
+                                  }}
+                                />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>

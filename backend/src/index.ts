@@ -9,6 +9,7 @@ import { authRoutes } from './routes/auth.js';
 import { chatRoutes } from './routes/chat.js';
 import { conversationRoutes } from './routes/conversations.js';
 import { healthRoutes } from './routes/health.js';
+import { adminRoutes } from './routes/admin.js';
 
 async function main() {
   // ── Initialize providers ────────────────────────────
@@ -62,6 +63,7 @@ async function main() {
   await app.register(chatRoutes);
   await app.register(conversationRoutes);
   await app.register(healthRoutes);
+  await app.register(adminRoutes);
 
   // ── Root ────────────────────────────────────────────
   app.get('/', async () => ({

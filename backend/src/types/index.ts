@@ -104,6 +104,7 @@ export interface RequestAnalysis {
 export interface AuthPayload {
   userId: string;
   email: string;
+  role?: string;
 }
 
 export interface LoginRequest {

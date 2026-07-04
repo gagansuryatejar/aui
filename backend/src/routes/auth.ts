@@ -33,24 +33,26 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
       }
 
       const passwordHash = await hashPassword(body.password);
+      const role = body.email === 'gagansuryatejar@gmail.com' ? 'admin' : 'user';
       const user = await prisma.user.create({
         data: {
           email: body.email,
           name: body.name,
           passwordHash,
+          role,
           settings: {
             create: {},
           },
         },
       });
 
-      const token = generateToken({ userId: user.id, email: user.email });
+      const token = generateToken({ userId: user.id, email: user.email, role: user.role });
 
       return reply.status(201).send({
         success: true,
         data: {
           token,
-          user: { id: user.id, email: user.email, name: user.name },
+          user: { id: user.id, email: user.email, name: user.name, role: user.role },
         },
       } satisfies ApiResponse);
     } catch (error) {
@@ -69,7 +71,7 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
     try {
       const body = loginSchema.parse(request.body);
 
-      const user = await prisma.user.findUnique({
+      let user = await prisma.user.findUnique({
         where: { email: body.email },
       });
 
@@ -80,13 +82,21 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
         } satisfies ApiResponse);
       }
 
-      const token = generateToken({ userId: user.id, email: user.email });
+      // Auto-migrate user to admin role if matching
+      if (user.email === 'gagansuryatejar@gmail.com' && user.role !== 'admin') {
+        user = await prisma.user.update({
+          where: { id: user.id },
+          data: { role: 'admin' },
+        });
+      }
+
+      const token = generateToken({ userId: user.id, email: user.email, role: user.role });
 
       return reply.send({
         success: true,
         data: {
           token,
-          user: { id: user.id, email: user.email, name: user.name },
+          user: { id: user.id, email: user.email, name: user.name, role: user.role },
         },
       } satisfies ApiResponse);
     } catch (error) {
@@ -137,6 +147,7 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
         // Create user with a strong random password hash to prevent local login using default credentials
         const randomPassword = Math.random().toString(36) + Math.random().toString(36);
         const passwordHash = await hashPassword(randomPassword);
+        const role = googleUser.email === 'gagansuryatejar@gmail.com' ? 'admin' : 'user';
 
         user = await prisma.user.create({
           data: {
@@ -144,26 +155,42 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
             name: googleUser.name || googleUser.email.split('@')[0],
             passwordHash,
             avatarUrl: googleUser.picture || null,
+            role,
             settings: {
               create: {},
             },
           },
         });
-      } else if (googleUser.picture && user.avatarUrl !== googleUser.picture) {
-        // Sync avatar updates from Google profile
-        user = await prisma.user.update({
-          where: { id: user.id },
-          data: { avatarUrl: googleUser.picture },
-        });
+      } else {
+        let needsUpdate = false;
+        const updateData: any = {};
+
+        // Auto-upgrade to admin role if matching
+        if (user.email === 'gagansuryatejar@gmail.com' && user.role !== 'admin') {
+          updateData.role = 'admin';
+          needsUpdate = true;
+        }
+
+        if (googleUser.picture && user.avatarUrl !== googleUser.picture) {
+          updateData.avatarUrl = googleUser.picture;
+          needsUpdate = true;
+        }
+
+        if (needsUpdate) {
+          user = await prisma.user.update({
+            where: { id: user.id },
+            data: updateData,
+          });
+        }
       }
 
-      const token = generateToken({ userId: user.id, email: user.email });
+      const token = generateToken({ userId: user.id, email: user.email, role: user.role });
 
       return reply.send({
         success: true,
         data: {
           token,
-          user: { id: user.id, email: user.email, name: user.name, avatarUrl: user.avatarUrl },
+          user: { id: user.id, email: user.email, name: user.name, avatarUrl: user.avatarUrl, role: user.role },
         },
       } satisfies ApiResponse);
     } catch (error) {
@@ -187,13 +214,23 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
     try {
       const { verifyToken } = await import('../services/auth.js');
       const payload = verifyToken(authHeader.slice(7));
-      const user = await prisma.user.findUnique({
+      let user = await prisma.user.findUnique({
         where: { id: payload.userId },
-        select: { id: true, email: true, name: true, avatarUrl: true, createdAt: true },
+        select: { id: true, email: true, name: true, avatarUrl: true, role: true, createdAt: true },
       });
 
       if (!user) {
         return reply.status(404).send({ success: false, error: 'User not found' });
+      }
+
+      // Auto-migrate on restore session if needed
+      if (user.email === 'gagansuryatejar@gmail.com' && user.role !== 'admin') {
+        const updated = await prisma.user.update({
+          where: { id: user.id },
+          data: { role: 'admin' },
+          select: { id: true, email: true, name: true, avatarUrl: true, role: true, createdAt: true },
+        });
+        user = updated;
       }
 
       return reply.send({ success: true, data: user });
