@@ -29,8 +29,6 @@ export default function SettingsModal() {
   const [loadingModels, setLoadingModels] = useState(false);
   const [errorModels, setErrorModels] = useState<string | null>(null);
 
-  if (!settingsOpen) return null;
-
   const tabs: Array<{ id: Tab; label: string; icon: React.ReactNode }> = [
     { id: 'general', label: 'General', icon: <Shield size={16} /> },
     { id: 'appearance', label: 'Appearance', icon: <Palette size={16} /> },
