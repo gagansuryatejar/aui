@@ -21,8 +21,9 @@ async function main() {
   });
 
   // ── Plugins ─────────────────────────────────────────
+  const frontendOrigins = config.frontendUrl.split(',').map((url) => url.trim());
   await app.register(cors, {
-    origin: [config.frontendUrl, 'http://localhost:3000', 'http://localhost:3001'],
+    origin: [...frontendOrigins, 'http://localhost:3000', 'http://localhost:3001'],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   });
