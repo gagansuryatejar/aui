@@ -41,6 +41,7 @@ export default function AuthPage() {
 
         // Set user profile in store
         setUser(data.user);
+        setAuthModalOpen(false);
       } catch (err: unknown) {
         setError(err instanceof Error ? err.message : 'Authentication failed');
       } finally {

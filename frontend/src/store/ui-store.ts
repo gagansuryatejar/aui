@@ -88,6 +88,7 @@ export const useUIStore = create<UIState>((set) => ({
   logout: () => {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('aui_token');
+      localStorage.removeItem('aui_active_conversation');
     }
     set({ user: null, isAuthenticated: false });
   },

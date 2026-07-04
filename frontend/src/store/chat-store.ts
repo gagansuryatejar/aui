@@ -63,6 +63,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
           timestamp: new Date(m.createdAt ?? Date.now()).getTime(),
         })) as ChatMessage[],
       });
+      // Persist the active conversation ID for session continuity
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('aui_active_conversation', id);
+      }
     } catch (err) {
       console.error('Failed to load conversation:', err);
     }

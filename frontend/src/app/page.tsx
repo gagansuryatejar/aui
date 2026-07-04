@@ -15,7 +15,7 @@ import { apiGet } from '@/lib/api';
 
 export default function Home() {
   const { setIsMobile, sidebarOpen, isAuthenticated, setUser, authModalOpen, setAuthModalOpen } = useUIStore();
-  const { loadConversations } = useChatStore();
+  const { loadConversations, loadConversation } = useChatStore();
   const [checkingAuth, setCheckingAuth] = useState(true);
 
   // Register keyboard shortcuts
@@ -45,6 +45,11 @@ export default function Home() {
           const user = await apiGet<{ id: string; email: string; name: string }>('/api/auth/me');
           setUser(user);
           await loadConversations();
+          // Load persisted active conversation if any
+          const persistedId = typeof window !== 'undefined' ? localStorage.getItem('aui_active_conversation') : null;
+          if (persistedId) {
+            loadConversation(persistedId);
+          }
         } catch {
           // Token expired or invalid
           localStorage.removeItem('aui_token');
@@ -55,7 +60,7 @@ export default function Home() {
     };
 
     initSession();
-  }, [loadConversations, setUser]);
+  }, [loadConversations, loadConversation, setUser]);
 
   if (checkingAuth) {
     return (
