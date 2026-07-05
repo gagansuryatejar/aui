@@ -13,11 +13,19 @@ export default function ChatArea() {
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
+  const prevMsgCount = useRef(0);
 
-  // Auto-scroll to bottom when new messages come in
+  // Auto-scroll to bottom when new messages arrive.
+  // Use instant scroll during streaming to avoid mobile jank;
+  // smooth scroll only on new user message submission.
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    const el = messagesEndRef.current;
+    if (!el) return;
+    const isNewMessage = messages.length > prevMsgCount.current;
+    prevMsgCount.current = messages.length;
+    el.scrollIntoView({ behavior: isStreaming ? 'auto' : (isNewMessage ? 'smooth' : 'auto') });
+  }, [messages, isStreaming]);
+
 
   const isEmpty = messages.length === 0;
 

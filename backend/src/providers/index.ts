@@ -4,6 +4,7 @@ import { GoogleProvider } from './google.js';
 import { GroqProvider } from './groq.js';
 import { OpenRouterProvider } from './openrouter.js';
 import { ZenMuxProvider } from './zenmux.js';
+import { NvidiaProvider } from './nvidia.js';
 import { logger } from '../services/logger.js';
 
 /**
@@ -48,6 +49,12 @@ export function initProviders(): void {
   if (config.zenmuxApiKey) {
     registry.set('zenmux', new ZenMuxProvider(config.zenmuxApiKey));
     logger.info('✅ Registered provider: ZenMux (Free)');
+  }
+
+  // NVIDIA AI (Nemotron, Llama, Mistral, DeepSeek, etc.)
+  if (config.nvidiaApiKey) {
+    registry.set('nvidia', new NvidiaProvider(config.nvidiaApiKey));
+    logger.info('✅ Registered provider: NVIDIA AI');
   }
 
   if (registry.size === 0) {

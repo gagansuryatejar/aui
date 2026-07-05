@@ -20,11 +20,15 @@ interface ChatState {
   // Error state
   error: string | null;
 
+  // Selected overrides
+  selectedModelId: string;
+  activePersona: any | null;
+
   // Actions
   loadConversations: () => Promise<void>;
   loadConversation: (id: string) => Promise<void>;
   newChat: () => void;
-  sendMessage: (content: string, attachments?: File[], webSearch?: boolean) => void;
+  sendMessage: (content: string, attachments?: File[], webSearch?: boolean, persona?: string) => void;
   stopStreaming: () => void;
   deleteConversation: (id: string) => Promise<void>;
   renameConversation: (id: string, title: string) => Promise<void>;
@@ -32,6 +36,8 @@ interface ChatState {
   editMessage: (messageId: string, newContent: string) => void;
   regenerateLastResponse: () => void;
   clearError: () => void;
+  setSelectedModelId: (id: string) => void;
+  setActivePersona: (persona: any | null) => void;
 }
 
 export const useChatStore = create<ChatState>((set, get) => ({
@@ -43,6 +49,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
   activeProvider: null,
   activeModel: null,
   error: null,
+  selectedModelId: 'auto',
+  activePersona: null,
+
 
   loadConversations: async () => {
     try {
@@ -86,8 +95,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
     });
   },
 
-  sendMessage: (content: string, _attachments?: File[], webSearch?: boolean) => {
-    const { messages, activeConversationId, isStreaming } = get();
+  sendMessage: (content: string, _attachments?: File[], webSearch?: boolean, persona?: string) => {
+    const { messages, activeConversationId, isStreaming, selectedModelId, activePersona } = get();
     if (isStreaming) return;
 
     const userMessage: ChatMessage = {
@@ -117,93 +126,100 @@ export const useChatStore = create<ChatState>((set, get) => ({
         timestamp: m.timestamp,
       }));
 
-    const controller = streamChat(messagesToSend, activeConversationId ?? undefined, webSearch, {
-      onConversation: (id) => {
-        console.log('Stream: onConversation called with ID:', id);
-        set({ activeConversationId: id });
-      },
-      onMeta: (provider, model) => {
-        console.log('Stream: onMeta called:', provider, model);
-        set({ activeProvider: provider, activeModel: model });
-      },
-      onSearching: (query) => {
-        console.log('Stream: onSearching called:', query);
-        const { messages: currentMessages } = get();
-        const updated = [...currentMessages];
-        const lastMsg = updated[updated.length - 1];
-        if (lastMsg && lastMsg.role === 'assistant') {
-          updated[updated.length - 1] = {
-            ...lastMsg,
-            isSearching: true,
-            searchQuery: query,
-          };
-        }
-        set({ messages: updated });
-      },
-      onSearchResults: (_results, _metadata) => {
-        console.log('Stream: onSearchResults received');
-        const { messages: currentMessages } = get();
-        const updated = [...currentMessages];
-        const lastMsg = updated[updated.length - 1];
-        if (lastMsg && lastMsg.role === 'assistant') {
-          updated[updated.length - 1] = {
-            ...lastMsg,
-            isSearching: false,
-          };
-        }
-        set({ messages: updated });
-      },
-      onChunk: (text) => {
-        const { messages: currentMessages } = get();
-        console.log('Stream: onChunk called. Text length:', text.length, 'Current messages count:', currentMessages.length);
-        const updated = [...currentMessages];
-        const lastMsg = updated[updated.length - 1];
-        if (lastMsg && lastMsg.role === 'assistant') {
-          updated[updated.length - 1] = {
-            ...lastMsg,
-            content: lastMsg.content + text,
-            isSearching: false,
-          };
-        } else {
-          console.warn('Stream warning: Last message is not assistant message! Role is:', lastMsg?.role);
-        }
-        set({ messages: updated });
-      },
-      onDone: () => {
-        console.log('Stream: onDone called');
-        const { messages: currentMessages } = get();
-        const updated = [...currentMessages];
-        const lastMsg = updated[updated.length - 1];
-        if (lastMsg && lastMsg.role === 'assistant') {
-          updated[updated.length - 1] = {
-            ...lastMsg,
+    const controller = streamChat(
+      messagesToSend,
+      activeConversationId ?? undefined,
+      webSearch,
+      {
+        onConversation: (id) => {
+          console.log('Stream: onConversation called with ID:', id);
+          set({ activeConversationId: id });
+        },
+        onMeta: (provider, model) => {
+          console.log('Stream: onMeta called:', provider, model);
+          set({ activeProvider: provider, activeModel: model });
+        },
+        onSearching: (query) => {
+          console.log('Stream: onSearching called:', query);
+          const { messages: currentMessages } = get();
+          const updated = [...currentMessages];
+          const lastMsg = updated[updated.length - 1];
+          if (lastMsg && lastMsg.role === 'assistant') {
+            updated[updated.length - 1] = {
+              ...lastMsg,
+              isSearching: true,
+              searchQuery: query,
+            };
+          }
+          set({ messages: updated });
+        },
+        onSearchResults: (_results, _metadata) => {
+          console.log('Stream: onSearchResults received');
+          const { messages: currentMessages } = get();
+          const updated = [...currentMessages];
+          const lastMsg = updated[updated.length - 1];
+          if (lastMsg && lastMsg.role === 'assistant') {
+            updated[updated.length - 1] = {
+              ...lastMsg,
+              isSearching: false,
+            };
+          }
+          set({ messages: updated });
+        },
+        onChunk: (text) => {
+          const { messages: currentMessages } = get();
+          console.log('Stream: onChunk called. Text length:', text.length, 'Current messages count:', currentMessages.length);
+          const updated = [...currentMessages];
+          const lastMsg = updated[updated.length - 1];
+          if (lastMsg && lastMsg.role === 'assistant') {
+            updated[updated.length - 1] = {
+              ...lastMsg,
+              content: lastMsg.content + text,
+              isSearching: false,
+            };
+          } else {
+            console.warn('Stream warning: Last message is not assistant message! Role is:', lastMsg?.role);
+          }
+          set({ messages: updated });
+        },
+        onDone: () => {
+          console.log('Stream: onDone called');
+          const { messages: currentMessages } = get();
+          const updated = [...currentMessages];
+          const lastMsg = updated[updated.length - 1];
+          if (lastMsg && lastMsg.role === 'assistant') {
+            updated[updated.length - 1] = {
+              ...lastMsg,
+              isStreaming: false,
+              isSearching: false,
+            };
+          }
+          set({
+            messages: updated,
             isStreaming: false,
-            isSearching: false,
-          };
-        }
-        set({
-          messages: updated,
-          isStreaming: false,
-          streamAbortController: null,
-        });
-        // Refresh conversation list
-        get().loadConversations();
+            streamAbortController: null,
+          });
+          // Refresh conversation list
+          get().loadConversations();
+        },
+        onError: (error) => {
+          console.error('Stream error callback:', error);
+          set({
+            error,
+            isStreaming: false,
+            streamAbortController: null,
+          });
+          // Remove the empty assistant message on error
+          const { messages: currentMessages } = get();
+          const filtered = currentMessages.filter(
+            (m) => !(m.role === 'assistant' && m.content === '' && m.isStreaming),
+          );
+          set({ messages: filtered });
+        },
       },
-      onError: (error) => {
-        console.error('Stream error callback:', error);
-        set({
-          error,
-          isStreaming: false,
-          streamAbortController: null,
-        });
-        // Remove the empty assistant message on error
-        const { messages: currentMessages } = get();
-        const filtered = currentMessages.filter(
-          (m) => !(m.role === 'assistant' && m.content === '' && m.isStreaming),
-        );
-        set({ messages: filtered });
-      },
-    });
+      persona || activePersona?.id,
+      selectedModelId,
+    );
 
     set({ streamAbortController: controller });
   },
@@ -300,4 +316,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
   },
 
   clearError: () => set({ error: null }),
+  setSelectedModelId: (id) => set({ selectedModelId: id }),
+  setActivePersona: (persona) => set({ activePersona: persona }),
 }));

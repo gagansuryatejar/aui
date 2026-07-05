@@ -4,6 +4,7 @@ import { executeChatStream } from '../services/smart-router.js';
 import { optionalAuth } from '../middleware/auth.js';
 import { prisma } from '../database/client.js';
 import { logger } from '../services/logger.js';
+import { extractAndSaveMemories, getMemoryContext } from '../services/memory.js';
 import type { ChatMessage } from '../types/index.js';
 
 export async function chatRoutes(app: FastifyInstance): Promise<void> {
@@ -16,16 +17,103 @@ export async function chatRoutes(app: FastifyInstance): Promise<void> {
         conversationId?: string;
         messages: ChatMessage[];
         webSearch?: boolean;
+        persona?: string; // optional specialist persona key
+        modelId?: string; // optional user selected model ID or 'consensus'
       };
 
       const userId = request.user?.userId;
       const messages = body.messages || [];
+      const modelId = body.modelId;
+
 
       if (!messages.length) {
         return reply.status(400).send({
           success: false,
           error: 'Messages array is required',
         });
+      }
+
+      // ── Inject memory context for signed-in users ────────
+      let augmentedMessages = [...messages];
+      if (userId) {
+        const memCtx = await getMemoryContext(userId);
+        if (memCtx) {
+          // Prepend a system message with the user's stored memories
+          const hasSys = augmentedMessages[0]?.role === 'system';
+          if (hasSys) {
+            augmentedMessages[0] = {
+              ...augmentedMessages[0],
+              content: augmentedMessages[0].content + memCtx,
+            };
+          } else {
+            augmentedMessages = [
+              {
+                id: 'memory-context',
+                role: 'system',
+                content: 'You are AUI, a helpful AI assistant.' + memCtx,
+                timestamp: Date.now(),
+              },
+              ...augmentedMessages,
+            ];
+          }
+        }
+      }
+
+      // ── Inject persona system prompt if requested ────────
+      if (body.persona) {
+        let personaPrompt = body.persona;
+        if (body.persona.includes('-') || body.persona.length > 0) {
+          try {
+            const { promises: fs } = await import('fs');
+            const path = await import('path');
+            const fileURLToPath = await import('url').then((u) => u.fileURLToPath);
+            const __dirname = path.dirname(fileURLToPath(import.meta.url));
+            const AGENTS_DIR = path.resolve(__dirname, '../../../agency-agents');
+
+            // Find category subdirectories
+            const entries = await fs.readdir(AGENTS_DIR, { withFileTypes: true });
+            const categories = entries
+              .filter((e) => e.isDirectory() && !e.name.startsWith('.'))
+              .map((e) => e.name);
+
+            let foundPath = '';
+            for (const category of categories) {
+              const catDir = path.join(AGENTS_DIR, category);
+              try {
+                const files = await fs.readdir(catDir);
+                const matched = files.find((f) => f.replace('.md', '') === body.persona);
+                if (matched) {
+                  foundPath = path.join(catDir, matched);
+                  break;
+                }
+              } catch {}
+            }
+
+            if (foundPath) {
+              const rawContent = await fs.readFile(foundPath, 'utf-8');
+              personaPrompt = rawContent.replace(/^---\n[\s\S]*?\n---\n?/, '').trim();
+            }
+          } catch {}
+        }
+
+        const personaContent = `You are acting as the following AI specialist persona. Follow this persona's identity, style, and mission exactly:\n\n${personaPrompt}\n\n---\n\n`;
+        const hasSys = augmentedMessages[0]?.role === 'system';
+        if (hasSys) {
+          augmentedMessages[0] = {
+            ...augmentedMessages[0],
+            content: personaContent + augmentedMessages[0].content,
+          };
+        } else {
+          augmentedMessages = [
+            {
+              id: 'persona-context',
+              role: 'system',
+              content: personaContent,
+              timestamp: Date.now(),
+            },
+            ...augmentedMessages,
+          ];
+        }
       }
 
       // Get or create conversation
@@ -83,7 +171,7 @@ export async function chatRoutes(app: FastifyInstance): Promise<void> {
       const startTime = Date.now();
 
       try {
-        const stream = executeChatStream(messages, body.webSearch);
+        const stream = executeChatStream(augmentedMessages, body.webSearch, modelId);
 
         for await (const chunk of stream) {
           if (chunk.type === 'metadata') {
@@ -161,6 +249,11 @@ export async function chatRoutes(app: FastifyInstance): Promise<void> {
             latencyMs,
             success: true,
           },
+        });
+
+        // ── Extract memories in background (non-blocking) ────
+        setImmediate(() => {
+          extractAndSaveMemories(userId, conversationId!, messages).catch(() => {});
         });
       }
 

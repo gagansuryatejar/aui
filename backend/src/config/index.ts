@@ -8,7 +8,7 @@ export const config = {
 
   // JWT
   jwtSecret: process.env.JWT_SECRET || 'dev-secret-change-me',
-  jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
+  jwtExpiresIn: process.env.JWT_EXPIRES_IN || '3650d',
 
   // Database
   databaseUrl: process.env.DATABASE_URL || 'file:./dev.db',
@@ -19,6 +19,7 @@ export const config = {
   cohereApiKey: process.env.COHERE_API_KEY || '',
   openrouterApiKey: process.env.OPENROUTER_API_KEY || '',
   zenmuxApiKey: process.env.ZENMUX_API_KEY || '',
+  nvidiaApiKey: process.env.NVIDIA_API_KEY || '',
 
   // Web Search
   tavilyApiKey: process.env.TAVILY_API_KEY || '',

@@ -240,14 +240,29 @@ export function routeRequest(messages: ChatMessage[], disabledModelIds: Set<stri
   const candidates = buildCandidateList(analysis, disabledModelIds);
 
   if (candidates.length === 0) {
-    // Absolute fallback
+    // Pick ANY model that isn't disabled as a last resort
+    const providers = getConfiguredProviders();
+    for (const provider of providers) {
+      for (const model of provider.models) {
+        if (!disabledModelIds.has(model.id)) {
+          return {
+            provider: provider.name,
+            model: model.id,
+            reason: `All preferred models unavailable – using ${provider.displayName}/${model.name} as fallback`,
+            fallbacks: [],
+          };
+        }
+      }
+    }
+    // True absolute fallback – all models disabled
     return {
       provider: 'google',
-      model: 'gemini-2.0-flash',
-      reason: 'No healthy models available – using default fallback',
+      model: 'gemini-2.5-flash',
+      reason: 'All models disabled – using absolute fallback',
       fallbacks: [],
     };
   }
+
 
   const primary = candidates[0];
   const fallbacks = candidates.slice(1).map((c) => ({
@@ -372,7 +387,11 @@ function isImageGenerationRequest(text: string): { isImage: boolean; prompt: str
 export async function* executeChatStream(
   messages: ChatMessage[],
   webSearchRequested?: boolean,
+  targetModelId?: string,
 ): AsyncGenerator<StreamChunk & { provider?: string; model?: string }> {
+  const disabledStatuses = await prisma.modelStatus.findMany({ where: { enabled: false } });
+  const disabledModelIds = new Set(disabledStatuses.map((s) => s.modelId));
+
   // Check for image generation intent first
   const lastUserMsg = messages.filter((m) => m.role === 'user').pop();
   if (lastUserMsg) {
@@ -406,17 +425,6 @@ export async function* executeChatStream(
       return;
     }
   }
-
-  const disabledStatuses = await prisma.modelStatus.findMany({ where: { enabled: false } });
-  const disabledModelIds = new Set(disabledStatuses.map((s) => s.modelId));
-
-  const decision = routeRequest(messages, disabledModelIds);
-  const attempts = [
-    { provider: decision.provider, model: decision.model },
-    ...decision.fallbacks,
-  ];
-
-  logger.info(`🧠 Smart Router: ${decision.reason}`);
 
   // ── Web search: only when user has enabled the toggle ───────────
   let augmentedMessages = [...messages];
@@ -466,6 +474,166 @@ export async function* executeChatStream(
       }
     }
   }
+
+  // ── Handle Consensus mode ───────────────────────────
+  if (targetModelId === 'consensus') {
+    logger.info('🏆 Consensus Mode: Initializing parallel candidate completions...');
+    yield {
+      type: 'metadata' as StreamChunk['type'],
+      content: '',
+      provider: 'consensus',
+      model: 'consensus',
+      metadata: {
+        provider: 'consensus',
+        providerName: 'Consensus Router',
+        model: 'consensus',
+        modelName: 'Consensus (Best of All Models)',
+      },
+    };
+
+    const providers = getConfiguredProviders();
+    const tasks: Promise<{ providerName: string; providerId: string; modelId: string; text: string }>[] = [];
+
+    for (const provider of providers) {
+      const model = provider.models.find((m) => !disabledModelIds.has(m.id));
+      if (model) {
+        tasks.push(
+          (async () => {
+            try {
+              const res = await provider.chat(augmentedMessages, model.id, { maxTokens: 1024 });
+              return {
+                providerName: provider.displayName,
+                providerId: provider.name,
+                modelId: model.id,
+                text: res.content,
+              };
+            } catch (e) {
+              const msg = e instanceof Error ? e.message : String(e);
+              logger.warn(`Consensus candidate query failed for ${provider.name}: ${msg}`);
+              return { providerName: provider.displayName, providerId: provider.name, modelId: model.id, text: '' };
+            }
+          })()
+        );
+      }
+    }
+
+    const results = await Promise.all(tasks);
+    const candidates = results.filter((c) => c.text.trim().length > 0);
+
+    if (candidates.length === 0) {
+      yield {
+        type: 'error' as StreamChunk['type'],
+        content: 'Consensus routing failed: No models returned candidate responses.',
+      };
+      return;
+    }
+
+    let winnerText = candidates[0].text;
+    let winnerModel = candidates[0].modelId;
+    let winnerProvider = candidates[0].providerId;
+    let reasoning = 'Default selection (only candidate or fallback)';
+
+    if (candidates.length > 1) {
+      const judgeProvider = getProvider('google') || providers[0];
+      const judgeModel = judgeProvider.models.find((m) => !disabledModelIds.has(m.id)) || judgeProvider.models[0];
+      
+      if (judgeModel) {
+        const judgePrompt = `You are an expert AI Consensus Judge.
+Given the user's prompt and a set of candidate answers generated by different AI models, evaluate them objectively.
+Select the single best, most accurate, well-formatted, and helpful answer. Return a JSON object in this exact schema:
+{
+  "selected_model_id": "Winning model ID (copy exactly)",
+  "reasoning": "Brief explanation of why this model won",
+  "answer": "The EXACT text of the winning model's answer, unchanged"
+}
+
+USER PROMPT:
+${lastUserMsg?.content || ''}
+
+CANDIDATES:
+${candidates.map((c, i) => `Candidate #${i} (Model ID: ${c.modelId}):\n${c.text}\n---\n`).join('\n')}`;
+
+        try {
+          const judgeRes = await judgeProvider.chat(
+            [{ id: 'judge', role: 'user', content: judgePrompt, timestamp: Date.now() }],
+            judgeModel.id,
+          );
+          const cleaned = judgeRes.content.replace(/```(?:json)?/g, '').trim();
+          const parsed = JSON.parse(cleaned);
+
+          const matched = candidates.find((c) => c.modelId === parsed.selected_model_id);
+          if (matched) {
+            winnerText = parsed.answer || matched.text;
+            winnerModel = matched.modelId;
+            winnerProvider = matched.providerId;
+            reasoning = parsed.reasoning || 'Evaluated by judge';
+          }
+        } catch (e) {
+          logger.warn(`Consensus Judge failed to evaluate: ${e instanceof Error ? e.message : e}`);
+        }
+      }
+    }
+
+    logger.info(`🏆 Consensus Winner: ${winnerProvider}/${winnerModel} (Reason: ${reasoning})`);
+    
+    // Stream chosen winner
+    yield {
+      type: 'metadata' as StreamChunk['type'],
+      content: '',
+      provider: winnerProvider,
+      model: winnerModel,
+      metadata: {
+        provider: winnerProvider,
+        providerName: winnerProvider.toUpperCase(),
+        model: winnerModel,
+        modelName: `${winnerModel} (Consensus Winner: ${reasoning})`,
+      },
+    };
+
+    // Split text into chunks to simulate typing speed for smooth transition
+    const chunkSize = 20;
+    for (let i = 0; i < winnerText.length; i += chunkSize) {
+      yield {
+        type: 'text' as StreamChunk['type'],
+        content: winnerText.slice(i, i + chunkSize),
+      };
+      await new Promise((r) => setTimeout(r, 10));
+    }
+
+    yield { type: 'done' as StreamChunk['type'], content: '' };
+    return;
+  }
+
+  // ── Handle target model override or smart router ──
+  let attempts: Array<{ provider: string; model: string }> = [];
+  let reason = '';
+
+  if (targetModelId && targetModelId !== 'auto') {
+    const providers = getConfiguredProviders();
+    let found = false;
+    for (const provider of providers) {
+      const model = provider.models.find((m) => m.id === targetModelId);
+      if (model) {
+        attempts = [{ provider: provider.name, model: targetModelId }];
+        reason = `Direct model selection → ${provider.displayName}/${model.name}`;
+        found = true;
+        break;
+      }
+    }
+    if (!found) {
+      // Fallback if model not found
+      const decision = routeRequest(augmentedMessages, disabledModelIds);
+      attempts = [{ provider: decision.provider, model: decision.model }, ...decision.fallbacks];
+      reason = `Direct model selection ${targetModelId} not found – falling back to ${decision.reason}`;
+    }
+  } else {
+    const decision = routeRequest(augmentedMessages, disabledModelIds);
+    attempts = [{ provider: decision.provider, model: decision.model }, ...decision.fallbacks];
+    reason = decision.reason;
+  }
+
+  logger.info(`🧠 Router stream strategy: ${reason}`);
+
 
   for (const attempt of attempts) {
     const provider = getProvider(attempt.provider);

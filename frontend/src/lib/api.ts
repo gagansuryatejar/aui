@@ -82,6 +82,8 @@ export function streamChat(
     onDone?: () => void;
     onError?: (error: string) => void;
   },
+  persona?: string, // optional persona prompt to inject
+  modelId?: string, // optional model selector override
 ): AbortController {
   const controller = new AbortController();
 
@@ -93,7 +95,13 @@ export function streamChat(
           'Content-Type': 'application/json',
           ...getAuthHeaders(),
         },
-        body: JSON.stringify({ conversationId, messages, webSearch: !!webSearch }),
+        body: JSON.stringify({
+          conversationId,
+          messages,
+          webSearch: !!webSearch,
+          ...(persona ? { persona } : {}),
+          ...(modelId ? { modelId } : {}),
+        }),
         signal: controller.signal,
       });
 
