@@ -3,10 +3,10 @@ import './globals.css';
 import 'highlight.js/styles/github-dark.css';
 
 export const metadata: Metadata = {
-  title: 'AUI – Intelligent AI Chat',
+  title: 'AUI | AUI AI Chat – Next-Gen Multi-Model Intelligence',
   description:
-    'An intelligent AI chat platform with multi-provider support, automatic model routing, streaming responses, and seamless fallbacks.',
-  keywords: ['AI', 'chat', 'GPT', 'Claude', 'Gemini', 'assistant'],
+    'AUI (AUI AI) is an advanced multi-provider AI chat platform featuring smart automatic model routing, live interactive website preview sandbox, custom personas, and support for over 78 free models.',
+  keywords: ['AUI', 'AUI AI', 'auiai', 'auiai.online', 'AI Chat', 'Multi-Model', 'Gemini', 'Groq', 'Nvidia'],
   authors: [{ name: 'AUI' }],
   viewport: 'width=device-width, initial-scale=1, maximum-scale=1',
 };
