@@ -12,11 +12,14 @@ import { useChatStore } from '@/store/chat-store';
 import { AnimatePresence } from 'framer-motion';
 import WelcomePopup from '@/components/common/WelcomePopup';
 import { apiGet } from '@/lib/api';
+import SandboxPreview, { parseWebCode } from '@/components/chat/SandboxPreview';
 
 export default function Home() {
-  const { setIsMobile, sidebarOpen, isAuthenticated, setUser, authModalOpen, setAuthModalOpen } = useUIStore();
-  const { loadConversations, loadConversation } = useChatStore();
+  const { setIsMobile, isMobile, sidebarOpen, isAuthenticated, setUser, authModalOpen, setAuthModalOpen, previewOpen, setPreviewOpen } = useUIStore();
+  const { loadConversations, loadConversation, messages } = useChatStore();
   const [checkingAuth, setCheckingAuth] = useState(true);
+
+  const webCode = parseWebCode(messages);
 
   // Register keyboard shortcuts
   useKeyboardShortcuts();
@@ -101,14 +104,30 @@ export default function Home() {
         style={{
           flex: 1,
           display: 'flex',
-          flexDirection: 'column',
+          flexDirection: 'row',
           height: '100vh',
           overflow: 'hidden',
           minWidth: 0,
         }}
       >
-        <Header />
-        <ChatArea />
+        <div
+          style={{
+            flex: 1,
+            display: (isMobile && previewOpen && webCode.hasCode) ? 'none' : 'flex',
+            flexDirection: 'column',
+            height: '100%',
+            overflow: 'hidden',
+            minWidth: 0,
+          }}
+        >
+          <Header />
+          <ChatArea />
+        </div>
+
+        {/* Sandbox Live Preview Side Panel */}
+        {previewOpen && webCode.hasCode && (
+          <SandboxPreview onClose={() => setPreviewOpen(false)} />
+        )}
       </div>
 
       {/* Settings modal */}

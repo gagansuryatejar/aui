@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Bot, ChevronDown, X, Search } from 'lucide-react';
+import { useUIStore } from '@/store/ui-store';
 
 interface Persona {
   id: string;
@@ -45,6 +46,7 @@ function formatCategory(cat: string): string {
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://aui-backend.onrender.com';
 
 export default function PersonaSelector({ selectedPersona, onSelect }: PersonaSelectorProps) {
+  const { isMobile } = useUIStore();
   const [open, setOpen] = useState(false);
   const [personas, setPersonas] = useState<Persona[]>([]);
   const [search, setSearch] = useState('');
@@ -100,7 +102,7 @@ export default function PersonaSelector({ selectedPersona, onSelect }: PersonaSe
           display: 'flex',
           alignItems: 'center',
           gap: '6px',
-          padding: '5px 10px',
+          padding: isMobile ? '5px 6px' : '5px 10px',
           borderRadius: 'var(--radius-full)',
           border: selectedPersona
             ? `1px solid ${getColor(selectedPersona.color)}55`
@@ -119,14 +121,16 @@ export default function PersonaSelector({ selectedPersona, onSelect }: PersonaSe
         {selectedPersona ? (
           <>
             <span style={{ fontSize: '0.85rem' }}>{selectedPersona.emoji}</span>
-            <span style={{ maxWidth: 80, overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              {selectedPersona.name}
-            </span>
+            {!isMobile && (
+              <span style={{ maxWidth: 80, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {selectedPersona.name}
+              </span>
+            )}
           </>
         ) : (
           <>
             <Bot size={13} />
-            <span>Persona</span>
+            {!isMobile && <span>Persona</span>}
           </>
         )}
         <ChevronDown

@@ -612,9 +612,20 @@ ${candidates.map((c, i) => `Candidate #${i} (Model ID: ${c.modelId}):\n${c.text}
     const providers = getConfiguredProviders();
     let found = false;
     for (const provider of providers) {
-      const model = provider.models.find((m) => m.id === targetModelId);
+      // Try exact match first
+      let model = provider.models.find((m) => m.id === targetModelId);
+      
+      // Try stripping provider name prefix (e.g., google/gemini-2.5-flash)
+      if (!model) {
+        const prefix = `${provider.name}/`;
+        if (targetModelId.startsWith(prefix)) {
+          const strippedId = targetModelId.slice(prefix.length);
+          model = provider.models.find((m) => m.id === strippedId);
+        }
+      }
+
       if (model) {
-        attempts = [{ provider: provider.name, model: targetModelId }];
+        attempts = [{ provider: provider.name, model: model.id }];
         reason = `Direct model selection → ${provider.displayName}/${model.name}`;
         found = true;
         break;

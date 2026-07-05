@@ -6,34 +6,66 @@ import { useUIStore } from '@/store/ui-store';
 import { useChatStore } from '@/store/chat-store';
 import ThemeToggle from '../common/ThemeToggle';
 import PersonaSelector from './PersonaSelector';
+import { parseWebCode } from './SandboxPreview';
+import { Play } from 'lucide-react';
 
 const MODELS = [
   { id: 'auto', name: 'Smart Router (Auto)', provider: 'system', icon: '🧠' },
   { id: 'consensus', name: 'Consensus (Best Answer)', provider: 'system', icon: '🏆' },
+  
   // Google
   { id: 'google/gemini-2.5-flash', name: 'Gemini 2.5 Flash', provider: 'Google', icon: '⚡' },
   { id: 'google/gemini-2.5-pro', name: 'Gemini 2.5 Pro', provider: 'Google', icon: '💎' },
+  
   // Groq
-  { id: 'groq/llama-3.3-70b-versatile', name: 'Llama 3.3 70B', provider: 'Groq', icon: '🚀' },
+  { id: 'groq/llama-3.3-70b-versatile', name: 'Llama 3.3 70B (Groq)', provider: 'Groq', icon: '🚀' },
+  
   // Nvidia
-  { id: 'nvidia/llama-3.1-nemotron-70b-instruct', name: 'Nemotron 70B', provider: 'Nvidia', icon: '🟢' },
+  { id: 'nvidia/nvidia/llama-3.1-nemotron-70b-instruct', name: 'Nemotron 70B', provider: 'Nvidia', icon: '🟢' },
+  { id: 'nvidia/meta/llama-4-maverick-17b-128e-instruct', name: 'Llama 4 Maverick', provider: 'Nvidia', icon: '🐎' },
   { id: 'nvidia/deepseek-ai/deepseek-v4-pro', name: 'DeepSeek V4 Pro', provider: 'Nvidia', icon: '🧩' },
   { id: 'nvidia/google/gemma-3-12b-it', name: 'Gemma 3 12B', provider: 'Nvidia', icon: '🔸' },
-  // OpenRouter
-  { id: 'openrouter/qwen/qwen-2.5-coder-32b-instruct:free', name: 'Qwen 2.5 Coder', provider: 'OpenRouter', icon: '💻' },
-  { id: 'openrouter/deepseek/deepseek-r2:free', name: 'DeepSeek R2', provider: 'OpenRouter', icon: '🔮' },
-  { id: 'openrouter/mistralai/mistral-nemo:free', name: 'Mistral Nemo', provider: 'OpenRouter', icon: '🌌' },
+  
+  // OpenRouter (Free)
+  { id: 'openrouter/qwen/qwen-2.5-coder-32b-instruct:free', name: 'Qwen 2.5 Coder (OR)', provider: 'OpenRouter', icon: '💻' },
+  { id: 'openrouter/deepseek/deepseek-r2:free', name: 'DeepSeek R2 (OR)', provider: 'OpenRouter', icon: '🔮' },
+  { id: 'openrouter/mistralai/mistral-nemo:free', name: 'Mistral Nemo (OR)', provider: 'OpenRouter', icon: '🌌' },
+  { id: 'openrouter/meta-llama/llama-3.3-70b-instruct:free', name: 'Llama 3.3 70B (OR)', provider: 'OpenRouter', icon: '🔥' },
+  
+  // Cerebras
+  { id: 'cerebras/llama-3.3-70b', name: 'Llama 3.3 70B (Cerebras)', provider: 'Cerebras', icon: '🦓' },
+  { id: 'cerebras/llama3.1-8b', name: 'Llama 3.1 8B (Cerebras)', provider: 'Cerebras', icon: '🌪️' },
+
+  // GitHub Models
+  { id: 'github/gpt-4o', name: 'GPT-4o (GitHub)', provider: 'GitHub', icon: '🐱' },
+  { id: 'github/gpt-4o-mini', name: 'GPT-4o Mini (GitHub)', provider: 'GitHub', icon: '🐭' },
+  { id: 'github/meta-llama-3.1-405b-instruct', name: 'Llama 3.1 405B (GitHub)', provider: 'GitHub', icon: '🦕' },
+
+  // Cloudflare
+  { id: 'cloudflare/@cf/meta/llama-3.1-8b-instruct', name: 'Llama 3.1 8B (CF)', provider: 'Cloudflare', icon: '☁️' },
+  { id: 'cloudflare/@cf/qwen/qwen1.5-14b-chat', name: 'Qwen 1.5 14B (CF)', provider: 'Cloudflare', icon: '🪐' },
+
+  // Cohere
+  { id: 'cohere/command-r-plus', name: 'Command R+ (Cohere)', provider: 'Cohere', icon: '🏰' },
+  { id: 'cohere/command-r', name: 'Command R (Cohere)', provider: 'Cohere', icon: '🛡️' },
+
+  // Mistral
+  { id: 'mistral/mistral-small-latest', name: 'Mistral Small', provider: 'Mistral', icon: '🍃' },
+  { id: 'mistral/codestral-latest', name: 'Codestral', provider: 'Mistral', icon: '🎯' }
 ];
 
 export default function Header() {
-  const { toggleSidebar, sidebarOpen, setSettingsOpen } = useUIStore();
+  const { toggleSidebar, sidebarOpen, setSettingsOpen, previewOpen, setPreviewOpen, isMobile } = useUIStore();
   const {
     activeModel,
     selectedModelId,
     setSelectedModelId,
     activePersona,
     setActivePersona,
+    messages,
   } = useChatStore();
+
+  const webCode = parseWebCode(messages);
 
   const [modelDropdownOpen, setModelDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -133,7 +165,7 @@ export default function Header() {
               display: 'flex',
               alignItems: 'center',
               gap: '6px',
-              padding: '6px 12px',
+              padding: isMobile ? '6px 8px' : '6px 12px',
               borderRadius: 'var(--radius-full)',
               border: '1px solid var(--border-primary)',
               background: 'var(--bg-secondary)',
@@ -146,7 +178,7 @@ export default function Header() {
             }}
           >
             <span style={{ fontSize: '0.9rem' }}>{selectedModel.icon}</span>
-            <span>{selectedModel.name}</span>
+            {!isMobile && <span>{selectedModel.name}</span>}
             <ChevronDown size={14} style={{ color: 'var(--text-tertiary)' }} />
           </button>
 
@@ -240,6 +272,32 @@ export default function Header() {
       {/* Right */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
         {/* Persona Selector Dropdown */}
+        {/* Live Preview Button */}
+        {webCode.hasCode && (
+          <button
+            onClick={() => setPreviewOpen(!previewOpen)}
+            title="Toggle Live Sandbox Preview"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: isMobile ? '8px' : '6px 14px',
+              borderRadius: 'var(--radius-full)',
+              border: '1px solid var(--border-primary)',
+              background: previewOpen ? 'rgba(99, 102, 241, 0.15)' : 'var(--bg-secondary)',
+              color: previewOpen ? 'var(--brand-primary)' : 'var(--text-primary)',
+              fontSize: '0.8125rem',
+              fontWeight: 500,
+              cursor: 'pointer',
+              transition: 'all var(--transition-fast)',
+              boxShadow: previewOpen ? '0 0 12px rgba(99, 102, 241, 0.3)' : 'var(--shadow-sm)',
+            }}
+          >
+            <Play size={13} style={{ fill: previewOpen ? 'currentColor' : 'none' }} />
+            {!isMobile && <span>Live Preview</span>}
+          </button>
+        )}
+
         <PersonaSelector selectedPersona={activePersona} onSelect={setActivePersona} />
 
         <ThemeToggle />

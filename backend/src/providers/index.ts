@@ -5,6 +5,12 @@ import { GroqProvider } from './groq.js';
 import { OpenRouterProvider } from './openrouter.js';
 import { ZenMuxProvider } from './zenmux.js';
 import { NvidiaProvider } from './nvidia.js';
+import { CerebrasProvider } from './cerebras.js';
+import { GitHubProvider } from './github.js';
+import { HuggingFaceProvider } from './huggingface.js';
+import { CloudflareProvider } from './cloudflare.js';
+import { MistralProvider } from './mistral.js';
+import { CohereProvider } from './cohere.js';
 import { logger } from '../services/logger.js';
 
 /**
@@ -55,6 +61,42 @@ export function initProviders(): void {
   if (config.nvidiaApiKey) {
     registry.set('nvidia', new NvidiaProvider(config.nvidiaApiKey));
     logger.info('✅ Registered provider: NVIDIA AI');
+  }
+
+  // Cerebras
+  if (config.cerebrasApiKey) {
+    registry.set('cerebras', new CerebrasProvider(config.cerebrasApiKey));
+    logger.info('✅ Registered provider: Cerebras');
+  }
+
+  // GitHub Models
+  if (config.githubApiKey) {
+    registry.set('github', new GitHubProvider(config.githubApiKey));
+    logger.info('✅ Registered provider: GitHub Models');
+  }
+
+  // Hugging Face
+  if (config.huggingfaceApiKey) {
+    registry.set('huggingface', new HuggingFaceProvider(config.huggingfaceApiKey));
+    logger.info('✅ Registered provider: Hugging Face');
+  }
+
+  // Cloudflare
+  if (config.cloudflareApiKey) {
+    registry.set('cloudflare', new CloudflareProvider(config.cloudflareApiKey));
+    logger.info('✅ Registered provider: Cloudflare Workers AI');
+  }
+
+  // Mistral AI
+  if (config.mistralApiKey) {
+    registry.set('mistral', new MistralProvider(config.mistralApiKey));
+    logger.info('✅ Registered provider: Mistral AI');
+  }
+
+  // Cohere
+  if (config.cohereApiKey) {
+    registry.set('cohere', new CohereProvider(config.cohereApiKey));
+    logger.info('✅ Registered provider: Cohere');
   }
 
   if (registry.size === 0) {

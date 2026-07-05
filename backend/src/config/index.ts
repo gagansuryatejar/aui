@@ -20,6 +20,11 @@ export const config = {
   openrouterApiKey: process.env.OPENROUTER_API_KEY || '',
   zenmuxApiKey: process.env.ZENMUX_API_KEY || '',
   nvidiaApiKey: process.env.NVIDIA_API_KEY || '',
+  cerebrasApiKey: process.env.CEREBRAS_API_KEY || '',
+  githubApiKey: process.env.GITHUB_API_KEY || '',
+  huggingfaceApiKey: process.env.HUGGINGFACE_API_KEY || '',
+  cloudflareApiKey: process.env.CLOUDFLARE_API_KEY || '',
+  mistralApiKey: process.env.MISTRAL_API_KEY || '',
 
   // Web Search
   tavilyApiKey: process.env.TAVILY_API_KEY || '',

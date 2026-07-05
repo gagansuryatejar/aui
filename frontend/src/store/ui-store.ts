@@ -25,6 +25,9 @@ interface UIState {
   // Auth modal
   authModalOpen: boolean;
 
+  // Sandbox Live Preview
+  previewOpen: boolean;
+
   // Actions
   toggleSidebar: () => void;
   setSidebarOpen: (open: boolean) => void;
@@ -36,6 +39,7 @@ interface UIState {
   setIsMobile: (mobile: boolean) => void;
   toggleWebSearch: () => void;
   setAuthModalOpen: (open: boolean) => void;
+  setPreviewOpen: (open: boolean) => void;
 }
 
 function getInitialTheme(): Theme {
@@ -66,6 +70,7 @@ export const useUIStore = create<UIState>((set) => ({
   settingsOpen: false,
   isMobile: false,
   authModalOpen: false,
+  previewOpen: false,
   webSearchEnabled: typeof window !== 'undefined'
     ? localStorage.getItem('aui_web_search') === 'true'
     : false,
@@ -107,6 +112,8 @@ export const useUIStore = create<UIState>((set) => ({
     }),
 
   setAuthModalOpen: (open) => set({ authModalOpen: open }),
+
+  setPreviewOpen: (open) => set({ previewOpen: open }),
 }));
 
 // Apply theme on load
