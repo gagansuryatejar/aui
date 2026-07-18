@@ -65,3 +65,35 @@ export interface UserSettings {
 }
 
 export type Theme = 'light' | 'dark' | 'system';
+
+// ── Memory types ─────────────────────────────────────────────
+
+export interface Memory {
+  id: string;
+  key: string;
+  content: string;
+  category: 'fact' | 'preference' | 'personality' | 'skill' | 'goal' | 'context';
+  importance: number;
+  source: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MemoryStats {
+  totalMemories: number;
+  byCategory: Array<{ category: string; count: number }>;
+  hasProfile: boolean;
+  profile: UserProfileData | null;
+}
+
+export interface UserProfileData {
+  communicationStyle: string;
+  preferredResponseLength: string;
+  expertiseAreas: string[];
+  personalityTraits: string[];
+}
+
+export interface MemoryTimelineEntry {
+  date: string;
+  memories: Memory[];
+}

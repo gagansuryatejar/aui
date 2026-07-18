@@ -11,6 +11,10 @@ import { conversationRoutes } from './routes/conversations.js';
 import { healthRoutes } from './routes/health.js';
 import { adminRoutes } from './routes/admin.js';
 import { personaRoutes } from './routes/personas.js';
+import { memoryRoutes } from './routes/memory.js';
+import { securityRoutes } from './routes/security.js';
+import { learningRoutes } from './routes/learning.js';
+import { configureSecurityHeaders } from './middleware/security-headers.js';
 
 async function main() {
   // ── Initialize providers ────────────────────────────
@@ -22,7 +26,9 @@ async function main() {
     bodyLimit: config.maxFileSizeMb * 1024 * 1024,
   });
 
-  // ── Plugins ─────────────────────────────────────────
+  // ── Plugins & Security Headers ─────────────────────
+  configureSecurityHeaders(app);
+
   const frontendOrigins = config.frontendUrl.split(',').map((url) => url.trim());
   await app.register(cors, {
     origin: [...frontendOrigins, 'http://localhost:3000', 'http://localhost:3001'],
@@ -66,6 +72,9 @@ async function main() {
   await app.register(conversationRoutes);
   await app.register(healthRoutes);
   await app.register(adminRoutes);
+  await app.register(memoryRoutes);
+  await app.register(securityRoutes);
+  await app.register(learningRoutes);
 
   // ── Root ────────────────────────────────────────────
   app.get('/', async () => ({

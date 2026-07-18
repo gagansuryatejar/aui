@@ -15,16 +15,24 @@ import {
   Monitor,
   Sparkles,
   Sliders,
+  Brain,
+  Lock,
 } from 'lucide-react';
+import SecurityDashboard from '../security/SecurityDashboard';
+import LearningDashboard from '../learning/LearningDashboard';
+import PreferenceList from '../learning/PreferenceList';
+import MfaSetup from '../security/MfaSetup';
+import PrivacyDashboard from '../security/PrivacyDashboard';
 import { useUIStore } from '@/store/ui-store';
 import type { Theme } from '@/types';
 import { apiGet, apiPost } from '@/lib/api';
 
-type Tab = 'general' | 'appearance' | 'shortcuts' | 'account' | 'about' | 'admin';
+type Tab = 'general' | 'appearance' | 'shortcuts' | 'account' | 'about' | 'admin' | 'security' | 'learning' | 'preferences';
 
 export default function SettingsModal() {
   const { settingsOpen, setSettingsOpen, theme, setTheme, user } = useUIStore();
   const [activeTab, setActiveTab] = useState<Tab>('general');
+  const [mfaSetupMode, setMfaSetupMode] = useState(false);
   const [models, setModels] = useState<any[]>([]);
   const [loadingModels, setLoadingModels] = useState(false);
   const [errorModels, setErrorModels] = useState<string | null>(null);
@@ -32,6 +40,9 @@ export default function SettingsModal() {
   const tabs: Array<{ id: Tab; label: string; icon: React.ReactNode }> = [
     { id: 'general', label: 'General', icon: <Shield size={16} /> },
     { id: 'appearance', label: 'Appearance', icon: <Palette size={16} /> },
+    { id: 'security', label: 'Security & Privacy', icon: <Lock size={16} /> },
+    { id: 'learning', label: 'Self Learning', icon: <Brain size={16} /> },
+    { id: 'preferences', label: 'AI Preferences', icon: <Palette size={16} /> },
     { id: 'shortcuts', label: 'Shortcuts', icon: <Keyboard size={16} /> },
     { id: 'account', label: 'Account', icon: <User size={16} /> },
     { id: 'about', label: 'About', icon: <Info size={16} /> },
@@ -485,6 +496,43 @@ export default function SettingsModal() {
                       </div>
                     )}
                   </div>
+                )}
+
+                {activeTab === 'security' && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                    {mfaSetupMode ? (
+                      <div style={{ border: '1px solid var(--border-primary)', padding: '16px', borderRadius: 'var(--radius-md)', background: 'var(--bg-secondary)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                          <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)' }}>MFA Setup Wizard</span>
+                          <button onClick={() => setMfaSetupMode(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', fontSize: '0.75rem', cursor: 'pointer' }}>Cancel</button>
+                        </div>
+                        <MfaSetup onCompleted={() => setMfaSetupMode(false)} />
+                      </div>
+                    ) : (
+                      <>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-primary)', paddingBottom: '12px' }}>
+                          <div>
+                            <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)' }}>Multi-Factor Authentication (TOTP)</div>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>Add an extra layer of protection to your credentials logging</div>
+                          </div>
+                          <button onClick={() => setMfaSetupMode(true)} style={{ padding: '6px 14px', borderRadius: 'var(--radius-sm)', border: 'none', background: 'var(--brand-primary)', color: 'white', fontSize: '0.75rem', fontWeight: 500, cursor: 'pointer' }}>Configure MFA</button>
+                        </div>
+                        <SecurityDashboard />
+                        <div style={{ borderTop: '1px solid var(--border-primary)', paddingTop: '16px', marginTop: '12px' }}>
+                          <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '8px' }}>Privacy & GDPR Controls</div>
+                          <PrivacyDashboard />
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+
+                {activeTab === 'learning' && (
+                  <LearningDashboard />
+                )}
+
+                {activeTab === 'preferences' && (
+                  <PreferenceList />
                 )}
 
                 {activeTab === 'about' && (

@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Menu, Sparkles, Settings, ChevronDown, Check,Cpu } from 'lucide-react';
+import { Menu, Sparkles, Settings, ChevronDown, Check, Cpu, Brain } from 'lucide-react';
 import { useUIStore } from '@/store/ui-store';
 import { useChatStore } from '@/store/chat-store';
+import { useMemoryStore } from '@/store/memory-store';
 import ThemeToggle from '../common/ThemeToggle';
 import PersonaSelector from './PersonaSelector';
 import { parseWebCode } from './SandboxPreview';
@@ -299,6 +300,33 @@ export default function Header() {
         )}
 
         <PersonaSelector selectedPersona={activePersona} onSelect={setActivePersona} />
+
+        {/* Memory button */}
+        <button
+          onClick={() => useMemoryStore.getState().setPanelOpen(true)}
+          title="Memory"
+          style={{
+            padding: '8px',
+            borderRadius: 'var(--radius-sm)',
+            border: 'none',
+            background: 'transparent',
+            color: 'var(--text-secondary)',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            transition: 'all var(--transition-fast)',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'var(--bg-hover)';
+            e.currentTarget.style.color = 'var(--text-primary)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'transparent';
+            e.currentTarget.style.color = 'var(--text-secondary)';
+          }}
+        >
+          <Brain size={18} />
+        </button>
 
         <ThemeToggle />
 

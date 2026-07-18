@@ -13,6 +13,7 @@ import { AnimatePresence } from 'framer-motion';
 import WelcomePopup from '@/components/common/WelcomePopup';
 import { apiGet } from '@/lib/api';
 import SandboxPreview, { parseWebCode } from '@/components/chat/SandboxPreview';
+import MemoryPanel from '@/components/memory/MemoryPanel';
 
 export default function Home() {
   const { setIsMobile, isMobile, sidebarOpen, isAuthenticated, setUser, authModalOpen, setAuthModalOpen, previewOpen, setPreviewOpen } = useUIStore();
@@ -132,6 +133,9 @@ export default function Home() {
 
       {/* Settings modal */}
       <SettingsModal />
+
+      {/* Memory panel */}
+      <MemoryPanel />
 
       {/* Welcome popup */}
       <WelcomePopup />

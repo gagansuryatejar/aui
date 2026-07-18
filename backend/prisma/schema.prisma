@@ -8,17 +8,35 @@ datasource db {
 }
 
 model User {
-  id            String         @id @default(uuid())
-  email         String         @unique
-  name          String
-  passwordHash  String
-  avatarUrl     String?
-  role          String         @default("user")
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  conversations Conversation[]
-  settings      UserSettings?
-  memories      Memory[]
+  id                  String            @id @default(uuid())
+  email               String            @unique
+  name                String
+  passwordHash        String
+  avatarUrl           String?
+  role                String            @default("user")
+  mfaEnabled          Boolean           @default(false)
+  mfaSecret           String?
+  backupCodes         String            @default("[]") // JSON string list of recovery codes
+  failedLoginAttempts Int               @default(0)
+  lockedAt            DateTime?
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+  conversations       Conversation[]
+  settings            UserSettings?
+  memories            Memory[]
+  profile             UserProfile?
+  sessions            Session[]
+  passkeys            UserPasskey[]
+  apiKeys             UserApiKey[]
+  workspaces          WorkspaceMember[]
+  auditEvents         AuditEvent[]
+  files               FileRecord[]
+  preferences         UserPreference[]
+  suggestions         ImprovementSuggestion[]
+  evaluations         TaskEvaluation[]
+  experiments         ExperimentRun[]
+  reports             WeeklyReport[]
+  promptVersions      PromptVersion[]
 }
 
 model UserSettings {
@@ -105,15 +123,262 @@ model ModelStatus {
 }
 
 model Memory {
+  id         String    @id @default(uuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  key        String    // e.g. "user_name", "preferred_language", "hobby"
+  content    String    // the fact or preference
+  category   String    @default("fact") // fact | preference | personality | context | skill | goal
+  importance Int       @default(3)      // 1 (low) to 5 (critical)
+  source     String?   // conversation ID that extracted this memory
+  expiresAt  DateTime? // optional TTL for temporary context
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@unique([userId, key])
+  @@index([userId])
+  @@index([category])
+  @@index([importance])
+}
+
+model ConversationSummary {
+  id             String   @id @default(uuid())
+  conversationId String   @unique
+  userId         String
+  summary        String   // AI-generated conversation summary
+  keyTopics      String   @default("[]") // JSON array of topic strings
+  emotionalTone  String   @default("neutral") // neutral | positive | frustrated | confused | urgent | excited
+  messageCount   Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([userId])
+  @@index([conversationId])
+}
+
+model UserProfile {
+  id                 String   @id @default(uuid())
+  userId             String   @unique
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  communicationStyle String   @default("balanced") // formal | casual | technical | balanced
+  expertiseAreas     String   @default("[]")       // JSON array of expertise strings
+  personalityTraits  String   @default("[]")       // JSON array of trait strings
+  preferredResponseLength String @default("medium") // brief | medium | detailed
+  timezone           String?
+  language           String   @default("en")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+model Session {
+  id                String   @id @default(uuid())
+  userId            String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  refreshTokenHash  String   @unique
+  deviceFingerprint String?
+  ipAddress         String?
+  countryCode       String?  @default("US")
+  lastActivity      DateTime @default(now())
+  expiresAt         DateTime
+  isValid           Boolean  @default(true)
+  createdAt         DateTime @default(now())
+
+  @@index([userId])
+}
+
+model UserPasskey {
+  id             String   @id @default(uuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  credentialId   String   @unique
+  publicKey      String   // Base64/Hex representation of public key
+  counter        Int      @default(0)
+  deviceType     String   @default("single-device") // single-device | multi-device
+  backedUp       Boolean  @default(false)
+  transports     String   @default("[]") // JSON list of transport options e.g. ["usb", "nfc", "ble", "internal"]
+  createdAt      DateTime @default(now())
+
+  @@index([userId])
+}
+
+model UserApiKey {
+  id        String    @id @default(uuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  keyHash   String    @unique
+  name      String    @default("API Key")
+  scopes    String    @default("[\"chat:write\"]") // JSON array of scopes
+  expiresAt DateTime?
+  lastUsed  DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+}
+
+model AuditEvent {
+  id         String   @id @default(uuid())
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action     String   // e.g. "auth.login", "memory.delete", "security.mfa_enabled"
+  status     String   // "success" | "failure"
+  ipAddress  String?
+  userAgent  String?
+  details    String?  // JSON string containing additional details
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+model Workspace {
+  id          String            @id @default(uuid())
+  name        String
+  description String?
+  members     WorkspaceMember[]
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+}
+
+model WorkspaceMember {
+  id          String    @id @default(uuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role        String    @default("member") // owner | admin | developer | member
+  createdAt   DateTime  @default(now())
+
+  @@unique([workspaceId, userId])
+  @@index([workspaceId])
+  @@index([userId])
+}
+
+model FileRecord {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  filename    String
+  mimeType    String
+  sizeBytes   Int
+  isEncrypted Boolean  @default(false)
+  encIv       String?  // hex IV for symmetric encryption
+  quarantine  Boolean  @default(false)
+  scanStatus  String   @default("pending") // pending | clean | infected | bypassed
+  storagePath String
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+}
+
+model PromptVersion {
+  id          String   @id @default(uuid())
+  name        String   // e.g. "routing", "coding_agent", "legal_agent"
+  content     String   // The prompt body
+  version     Int      @default(1)
+  active      Boolean  @default(false)
+  userId      String?  // Optional: tracking who created it (e.g. system vs admin)
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([name, version])
+  @@index([name])
+}
+
+model UserPreference {
   id        String   @id @default(uuid())
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  key       String   // e.g. "user_name", "preferred_language", "hobby"
-  content   String   // the fact or preference
-  source    String?  // conversation ID that extracted this memory
+  key       String   // e.g. "coding_style", "favorite_framework", "response_length"
+  value     String   // Dynamic value representation
+  source    String   @default("inferred") // "inferred" | "explicit"
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@unique([userId, key])
   @@index([userId])
+}
+
+model ImprovementSuggestion {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title       String
+  description String
+  type        String   // e.g. "prompt", "route_policy", "preference", "memory"
+  payload     String   // JSON string of proposed configuration or prompt change
+  benefits    String   // Expected benefits
+  risks       String   // Potential risks
+  confidence  Float    @default(0.8)
+  status      String   @default("pending") // pending | approved | rejected | applied | rolled_back
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
+}
+
+model TaskEvaluation {
+  id             String   @id @default(uuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conversationId String
+  messageId      String?
+  accuracy       Int      @default(0) // 1-5 scale (evaluated by judge model)
+  completeness   Int      @default(0) // 1-5 scale
+  clarity        Int      @default(0) // 1-5 scale
+  latencyMs      Int
+  satisfaction   Int      @default(0) // 1-5 (thumbs up/down maps to 5/1, edit to 2)
+  toolSuccess    Boolean  @default(true)
+  metadata       String?  // JSON context (models used, tools called)
+  createdAt      DateTime @default(now())
+
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model ExperimentRun {
+  id               String   @id @default(uuid())
+  userId           String
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name             String   // Name of experiment e.g. "Gemini vs Llama Coding"
+  promptName       String   // Target prompt e.g. "coding_agent"
+  testPrompt       String
+  basePrompt       String
+  testAccuracy     Float
+  baseAccuracy     Float
+  testLatencyAvg   Int
+  baseLatencyAvg   Int
+  approved         Boolean  @default(false)
+  createdAt        DateTime @default(now())
+
+  @@index([userId])
+}
+
+model WeeklyReport {
+  id                 String   @id @default(uuid())
+  userId             String
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content            String   // Markdown summary of improvements and metrics
+  skillsImproved     String   @default("[]") // JSON string list of topics/skills
+  optimizationsCount Int      @default(0)
+  createdAt          DateTime @default(now())
+
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model Plugin {
+  id              String   @id @default(uuid())
+  name            String
+  description     String?
+  author          String   @default("System")
+  code            String   // JavaScript script source
+  status          String   @default("active") // active | blocked | review
+  reputationScore Int      @default(100)
+  permissions     String   @default("[]") // JSON list of string permissions
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }

@@ -20,6 +20,8 @@ export default function AuthPage() {
   const [name, setName] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [requiresMfa, setRequiresMfa] = useState(false);
+  const [mfaCode, setMfaCode] = useState('');
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
@@ -28,19 +30,33 @@ export default function AuthPage() {
       setLoading(true);
 
       const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register';
-      const payload = isLogin ? { email, password } : { email, password, name };
+      const payload = isLogin
+        ? { email, password, ...(mfaCode && { mfaCode }) }
+        : { email, password, name };
 
       try {
-        const data = await apiPost<{ token: string; user: { id: string; email: string; name: string } }>(
-          endpoint,
-          payload,
-        );
+        const data = await apiPost<{
+          token?: string;
+          user?: { id: string; email: string; name: string };
+          requiresMfa?: boolean;
+          tempToken?: string;
+        }>(endpoint, payload);
+
+        if (data.requiresMfa) {
+          setRequiresMfa(true);
+          setLoading(false);
+          return;
+        }
 
         // Store token
-        localStorage.setItem('aui_token', data.token);
+        if (data.token) {
+          localStorage.setItem('aui_token', data.token);
+        }
 
         // Set user profile in store
-        setUser(data.user);
+        if (data.user) {
+          setUser(data.user);
+        }
         setAuthModalOpen(false);
       } catch (err: unknown) {
         setError(err instanceof Error ? err.message : 'Authentication failed');
@@ -48,7 +64,7 @@ export default function AuthPage() {
         setLoading(false);
       }
     },
-    [isLogin, email, password, name, setUser],
+    [isLogin, email, password, name, mfaCode, setUser, setAuthModalOpen],
   );
 
   // Load Google Identity Services SDK script
@@ -243,97 +259,131 @@ export default function AuthPage() {
 
         {/* Auth form */}
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          {!isLogin && (
+          {requiresMfa ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <label style={{ fontSize: '0.8125rem', fontWeight: 500, color: 'var(--text-secondary)' }}>NameLabel</label>
+              <label style={{ fontSize: '0.8125rem', fontWeight: 500, color: 'var(--text-secondary)' }}>Verification Code</label>
               <div style={{ position: 'relative' }}>
-                <User
-                  size={16}
-                  style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-tertiary)' }}
-                />
                 <input
                   type="text"
-                  placeholder="Enter your name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  required={!isLogin}
+                  placeholder="000000"
+                  value={mfaCode}
+                  onChange={(e) => setMfaCode(e.target.value)}
+                  maxLength={6}
+                  required
                   style={{
                     width: '100%',
-                    padding: '10px 12px 10px 36px',
+                    padding: '10px 12px',
                     borderRadius: 'var(--radius-sm)',
                     border: '1px solid var(--border-primary)',
                     background: 'var(--bg-input)',
                     color: 'var(--text-primary)',
-                    fontSize: '0.875rem',
+                    fontSize: '1rem',
+                    fontWeight: 600,
+                    textAlign: 'center',
+                    letterSpacing: '0.2em',
                     outline: 'none',
-                    transition: 'all var(--transition-fast)',
                   }}
-                  onFocus={(e) => (e.currentTarget.style.borderColor = 'var(--border-focus)')}
-                  onBlur={(e) => (e.currentTarget.style.borderColor = 'var(--border-primary)')}
                 />
               </div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', textAlign: 'center', marginTop: '4px' }}>
+                Enter the code from your authenticator app
+              </div>
             </div>
+          ) : (
+            <>
+              {!isLogin && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '0.8125rem', fontWeight: 500, color: 'var(--text-secondary)' }}>Name</label>
+                  <div style={{ position: 'relative' }}>
+                    <User
+                      size={16}
+                      style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-tertiary)' }}
+                    />
+                    <input
+                      type="text"
+                      placeholder="Enter your name"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      required={!isLogin}
+                      style={{
+                        width: '100%',
+                        padding: '10px 12px 10px 36px',
+                        borderRadius: 'var(--radius-sm)',
+                        border: '1px solid var(--border-primary)',
+                        background: 'var(--bg-input)',
+                        color: 'var(--text-primary)',
+                        fontSize: '0.875rem',
+                        outline: 'none',
+                        transition: 'all var(--transition-fast)',
+                      }}
+                      onFocus={(e) => (e.currentTarget.style.borderColor = 'var(--border-focus)')}
+                      onBlur={(e) => (e.currentTarget.style.borderColor = 'var(--border-primary)')}
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontSize: '0.8125rem', fontWeight: 500, color: 'var(--text-secondary)' }}>Email address</label>
+                <div style={{ position: 'relative' }}>
+                  <Mail
+                    size={16}
+                    style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-tertiary)' }}
+                  />
+                  <input
+                    type="email"
+                    placeholder="you@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px 10px 36px',
+                      borderRadius: 'var(--radius-sm)',
+                      border: '1px solid var(--border-primary)',
+                      background: 'var(--bg-input)',
+                      color: 'var(--text-primary)',
+                      fontSize: '0.875rem',
+                      outline: 'none',
+                      transition: 'all var(--transition-fast)',
+                    }}
+                    onFocus={(e) => (e.currentTarget.style.borderColor = 'var(--border-focus)')}
+                    onBlur={(e) => (e.currentTarget.style.borderColor = 'var(--border-primary)')}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontSize: '0.8125rem', fontWeight: 500, color: 'var(--text-secondary)' }}>Password</label>
+                <div style={{ position: 'relative' }}>
+                  <Lock
+                    size={16}
+                    style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-tertiary)' }}
+                  />
+                  <input
+                    type="password"
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px 10px 36px',
+                      borderRadius: 'var(--radius-sm)',
+                      border: '1px solid var(--border-primary)',
+                      background: 'var(--bg-input)',
+                      color: 'var(--text-primary)',
+                      fontSize: '0.875rem',
+                      outline: 'none',
+                      transition: 'all var(--transition-fast)',
+                    }}
+                    onFocus={(e) => (e.currentTarget.style.borderColor = 'var(--border-focus)')}
+                    onBlur={(e) => (e.currentTarget.style.borderColor = 'var(--border-primary)')}
+                  />
+                </div>
+              </div>
+            </>
           )}
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            <label style={{ fontSize: '0.8125rem', fontWeight: 500, color: 'var(--text-secondary)' }}>Email address</label>
-            <div style={{ position: 'relative' }}>
-              <Mail
-                size={16}
-                style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-tertiary)' }}
-              />
-              <input
-                type="email"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                style={{
-                  width: '100%',
-                  padding: '10px 12px 10px 36px',
-                  borderRadius: 'var(--radius-sm)',
-                  border: '1px solid var(--border-primary)',
-                  background: 'var(--bg-input)',
-                  color: 'var(--text-primary)',
-                  fontSize: '0.875rem',
-                  outline: 'none',
-                  transition: 'all var(--transition-fast)',
-                }}
-                onFocus={(e) => (e.currentTarget.style.borderColor = 'var(--border-focus)')}
-                onBlur={(e) => (e.currentTarget.style.borderColor = 'var(--border-primary)')}
-              />
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            <label style={{ fontSize: '0.8125rem', fontWeight: 500, color: 'var(--text-secondary)' }}>Password</label>
-            <div style={{ position: 'relative' }}>
-              <Lock
-                size={16}
-                style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-tertiary)' }}
-              />
-              <input
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                style={{
-                  width: '100%',
-                  padding: '10px 12px 10px 36px',
-                  borderRadius: 'var(--radius-sm)',
-                  border: '1px solid var(--border-primary)',
-                  background: 'var(--bg-input)',
-                  color: 'var(--text-primary)',
-                  fontSize: '0.875rem',
-                  outline: 'none',
-                  transition: 'all var(--transition-fast)',
-                }}
-                onFocus={(e) => (e.currentTarget.style.borderColor = 'var(--border-focus)')}
-                onBlur={(e) => (e.currentTarget.style.borderColor = 'var(--border-primary)')}
-              />
-            </div>
-          </div>
 
           {/* Submit button */}
           <button
