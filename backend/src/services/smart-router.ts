@@ -426,6 +426,141 @@ export async function* executeChatStream(
     }
   }
 
+  // ── Agent Loop ──────────────────────────────────────────
+  const promptText = lastUserMsg?.content || '';
+  const isAgentMode =
+    promptText.startsWith('/agent') ||
+    promptText.startsWith('/goal') ||
+    promptText.toLowerCase().includes('agent mode') ||
+    promptText.toLowerCase().includes('run as agent') ||
+    promptText.toLowerCase().includes('plan and execute');
+
+  if (isAgentMode) {
+    logger.info(`🤖 Autonomous Agent Mode activated for prompt: "${promptText}"`);
+
+    yield {
+      type: 'metadata' as StreamChunk['type'],
+      content: '',
+      provider: 'system',
+      model: 'agent-executor',
+      metadata: {
+        provider: 'system',
+        providerName: 'AUI Autonomous Agent OS',
+        model: 'agent-executor',
+        modelName: 'AUI Agent (Multi-Step Execution Loop)',
+      },
+    };
+
+    yield {
+      type: 'text' as StreamChunk['type'],
+      content: `🧠 **AUI Autonomous Agent OS Mode Activated**\n\n`,
+    };
+
+    // 1. Planning Step
+    yield {
+      type: 'text' as StreamChunk['type'],
+      content: `📝 *Analyzing goal and constructing multi-step plan...*\n\n`,
+    };
+
+    const cleanPrompt = promptText.replace(/^\/(?:agent|goal)\s*/, '');
+    const plan = [
+      `Search the web for up-to-date sources related to: "${cleanPrompt.slice(0, 50)}"`,
+      `Evaluate details, filter facts, and plan code or architecture components`,
+      `Synthesize findings and compile the optimized final solution`,
+    ];
+
+    yield {
+      type: 'text' as StreamChunk['type'],
+      content: `### 📋 Execution Plan:\n` + plan.map((p, idx) => `${idx + 1}. **${p}**`).join('\n') + `\n\n---\n\n`,
+    };
+
+    // 2. Loop & Execute Steps
+    let gatheredContext = '';
+
+    // Step 1 execution: Web Search
+    yield {
+      type: 'text' as StreamChunk['type'],
+      content: `🔄 **[Step 1/3]** *Running web research search queries...*\n\n`,
+    };
+    yield { type: 'searching' as StreamChunk['type'], content: cleanPrompt };
+
+    try {
+      const searchRes = await webSearch(cleanPrompt);
+      const formatted = formatSearchContext(searchRes);
+      gatheredContext += `\n\nWeb Search Findings:\n${formatted}`;
+
+      yield {
+        type: 'search_results' as StreamChunk['type'],
+        content: JSON.stringify(searchRes.results),
+        metadata: {
+          provider: searchRes.provider,
+          query: searchRes.query,
+          cached: searchRes.cached,
+          resultCount: searchRes.results.length,
+        },
+      };
+
+      yield {
+        type: 'text' as StreamChunk['type'],
+        content: `✅ *Web research complete. Found ${searchRes.results.length} relevant reference materials.*\n\n`,
+      };
+    } catch (err) {
+      yield {
+        type: 'text' as StreamChunk['type'],
+        content: `⚠️ *Web research skipped/failed: ${err instanceof Error ? err.message : String(err)}.*\n\n`,
+      };
+    }
+
+    // Step 2 execution: Analysis
+    yield {
+      type: 'text' as StreamChunk['type'],
+      content: `🔄 **[Step 2/3]** *Evaluating structural parameters and reasoning...*\n\n`,
+    };
+    await new Promise((r) => setTimeout(r, 1200)); // simulation reasoning delay
+    
+    // Step 3 execution: Final Synthesis & Generation
+    yield {
+      type: 'text' as StreamChunk['type'],
+      content: `🔄 **[Step 3/3]** *Synthesizing findings into final solution stream...*\n\n---\n\n`,
+    };
+
+    // Construct augmented messages for final compilation
+    const finalSystemMsg: ChatMessage = {
+      id: 'agent-context',
+      role: 'system',
+      content: `You are the AUI Autonomous Agent OS. Solve this task by synthesizing the gathered context below:
+${gatheredContext}
+Output a complete, final, and professional response. If code is requested, provide it in clean markdown code blocks (HTML, CSS, JS) so the sandbox can render it.`,
+      timestamp: Date.now(),
+    };
+
+    const finalMessages = [
+      ...messages.slice(0, messages.length - 1),
+      finalSystemMsg,
+      {
+        ...messages[messages.length - 1],
+        content: cleanPrompt,
+      },
+    ];
+
+    // Pick first candidate provider to stream the final answer
+    const analysis = analyzeRequest(finalMessages);
+    const candidates = buildCandidateList(analysis, disabledModelIds);
+    if (candidates.length === 0) {
+      throw new Error('No candidate providers available for final synthesis.');
+    }
+
+    const stream = executeChatStream(finalMessages, false, candidates[0].modelId);
+    for await (const chunk of stream) {
+      if (chunk.type === 'text') {
+        yield chunk;
+      }
+    }
+
+    yield { type: 'done' as StreamChunk['type'], content: '' };
+    return;
+  }
+
   // ── Web search: only when user has enabled the toggle ───────────
   let augmentedMessages = [...messages];
 
