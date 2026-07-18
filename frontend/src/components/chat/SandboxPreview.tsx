@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { RefreshCw, Code2, Terminal, Play, ExternalLink, AlertTriangle, X, Maximize2, Minimize2 } from 'lucide-react';
+import { RefreshCw, Code2, Terminal, Play, ExternalLink, AlertTriangle, X, Maximize2, Minimize2, Sparkles } from 'lucide-react';
 import { useUIStore } from '@/store/ui-store';
 import { useChatStore } from '@/store/chat-store';
 
@@ -205,6 +205,34 @@ export default function SandboxPreview({ onClose }: { onClose: () => void }) {
       newWindow.document.close();
     }
   }, [combinedHtml]);
+
+  const handleAutoDiagnostics = useCallback(() => {
+    const errorLogs = logs.filter((log) => log.type === 'error' || log.type === 'runtime_error');
+    if (errorLogs.length === 0) return;
+
+    const logsSummary = errorLogs.map((log) => `[${log.type}] ${log.content}`).join('\n');
+    const prompt = `/agent 🔍 **Auto Preview Diagnostics & Self-Healing Action**
+The Sandbox application preview generated the following console errors:
+\`\`\`
+${logsSummary}
+\`\`\`
+
+Analyze the console logs, diagnose the root cause, automatically fix the code, and output the updated HTML, CSS, and JS blocks.`;
+
+    useChatStore.getState().sendMessage(prompt);
+  }, [logs]);
+
+  const handlePerformAudit = useCallback(() => {
+    const prompt = `/agent ⚡ **Auto Audit Performance, SEO & Security**
+Please execute a complete automated validation on the code above:
+1. **Performance**: Optimize scripts, CSS tags, and structure to achieve faster rendering speeds.
+2. **SEO & Semantics**: Check headings hierarchy, meta information, and alt attributes.
+3. **Security**: Validate that variables are sanitized and verify scripts have no vulnerabilities.
+
+Diagnose optimization areas, explain them clearly, and output the updated, clean production-ready code.`;
+
+    useChatStore.getState().sendMessage(prompt);
+  }, []);
 
   const hasErrors = logs.some((l) => l.type === 'error' || l.type === 'runtime_error');
 
@@ -423,6 +451,79 @@ export default function SandboxPreview({ onClose }: { onClose: () => void }) {
               overflow: 'hidden',
             }}
           >
+            {/* Auto diagnostics bar */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '8px 12px',
+                background: '#0f172a',
+                borderBottom: '1px solid var(--border-primary)',
+                gap: '8px',
+                flexWrap: 'wrap',
+              }}
+            >
+              <span style={{ color: '#94a3b8', fontSize: '0.75rem', fontWeight: 600 }}>CONSOLE LOGS</span>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                {logs.some((l) => l.type === 'error' || l.type === 'runtime_error') && (
+                  <button
+                    onClick={handleAutoDiagnostics}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      padding: '4px 10px',
+                      borderRadius: 'var(--radius-sm)',
+                      background: 'rgba(239, 68, 68, 0.15)',
+                      border: '1px solid rgba(239, 68, 68, 0.3)',
+                      color: '#f87171',
+                      fontSize: '0.72rem',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      transition: 'all var(--transition-fast)',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = 'rgba(239, 68, 68, 0.25)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'rgba(239, 68, 68, 0.15)';
+                    }}
+                  >
+                    <AlertTriangle size={12} />
+                    <span>Diagnose & Auto-Fix</span>
+                  </button>
+                )}
+
+                <button
+                  onClick={handlePerformAudit}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    padding: '4px 10px',
+                    borderRadius: 'var(--radius-sm)',
+                    background: 'rgba(99, 102, 241, 0.15)',
+                    border: '1px solid rgba(99, 102, 241, 0.3)',
+                    color: '#818cf8',
+                    fontSize: '0.72rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    transition: 'all var(--transition-fast)',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'rgba(99, 102, 241, 0.25)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'rgba(99, 102, 241, 0.15)';
+                  }}
+                >
+                  <Sparkles size={12} />
+                  <span>Audit Performance & SEO</span>
+                </button>
+              </div>
+            </div>
+
             {/* Logs List */}
             <div style={{ flex: 1, overflowY: 'auto', padding: '12px' }}>
               {logs.length === 0 ? (
