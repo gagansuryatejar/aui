@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Menu, Sparkles, Settings, ChevronDown, Check, Cpu, Brain } from 'lucide-react';
+import { Menu, Sparkles, Settings, ChevronDown, Check, Cpu, Brain, Bell, BellOff } from 'lucide-react';
 import { useUIStore } from '@/store/ui-store';
 import { useChatStore } from '@/store/chat-store';
 import { useMemoryStore } from '@/store/memory-store';
@@ -67,6 +67,47 @@ export default function Header() {
   } = useChatStore();
 
   const webCode = parseWebCode(messages);
+
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('aui_notifications_enabled') === 'true';
+      const granted = typeof Notification !== 'undefined' && Notification.permission === 'granted';
+      setNotificationsEnabled(saved && granted);
+    }
+  }, []);
+
+  const toggleNotifications = async () => {
+    if (typeof Notification === 'undefined') {
+      alert('Desktop notifications are not supported by this browser.');
+      return;
+    }
+
+    if (Notification.permission === 'default') {
+      const permission = await Notification.requestPermission();
+      if (permission === 'granted') {
+        localStorage.setItem('aui_notifications_enabled', 'true');
+        setNotificationsEnabled(true);
+        new Notification('AUI Notification System', {
+          body: 'System notifications configured successfully!',
+        });
+      } else {
+        alert('Permission denied. Please enable notifications in your browser settings.');
+      }
+    } else if (Notification.permission === 'denied') {
+      alert('Permission denied. Please enable notifications in your browser settings.');
+    } else {
+      const nextState = !notificationsEnabled;
+      setNotificationsEnabled(nextState);
+      localStorage.setItem('aui_notifications_enabled', String(nextState));
+      if (nextState) {
+        new Notification('AUI Notification System', {
+          body: 'System notifications turned on.',
+        });
+      }
+    }
+  };
 
   const [modelDropdownOpen, setModelDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -158,93 +199,7 @@ export default function Header() {
           </span>
         </div>
 
-        {/* Model dropdown selector */}
-        <div ref={dropdownRef} style={{ position: 'relative' }}>
-          <button
-            onClick={() => setModelDropdownOpen((v) => !v)}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: isMobile ? '6px 8px' : '6px 12px',
-              borderRadius: 'var(--radius-full)',
-              border: '1px solid var(--border-primary)',
-              background: 'var(--bg-secondary)',
-              color: 'var(--text-primary)',
-              fontSize: '0.8125rem',
-              fontWeight: 500,
-              cursor: 'pointer',
-              transition: 'all var(--transition-fast)',
-              boxShadow: 'var(--shadow-sm)',
-            }}
-          >
-            <span style={{ fontSize: '0.9rem' }}>{selectedModel.icon}</span>
-            {!isMobile && <span>{selectedModel.name}</span>}
-            <ChevronDown size={14} style={{ color: 'var(--text-tertiary)' }} />
-          </button>
-
-          {modelDropdownOpen && (
-            <div
-              style={{
-                position: 'absolute',
-                top: 'calc(100% + 6px)',
-                left: 0,
-                width: 260,
-                maxHeight: 380,
-                overflowY: 'auto',
-                background: 'var(--bg-secondary)',
-                border: '1px solid var(--border-primary)',
-                borderRadius: 'var(--radius-md)',
-                boxShadow: 'var(--shadow-lg)',
-                padding: '6px 0',
-                zIndex: 40,
-              }}
-            >
-              {MODELS.map((m) => {
-                const isSelected = selectedModelId === m.id;
-                return (
-                  <button
-                    key={m.id}
-                    onClick={() => {
-                      setSelectedModelId(m.id);
-                      setModelDropdownOpen(false);
-                    }}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      width: '100%',
-                      padding: '8px 14px',
-                      border: 'none',
-                      background: isSelected ? 'var(--bg-hover)' : 'transparent',
-                      color: 'var(--text-primary)',
-                      fontSize: '0.8125rem',
-                      textAlign: 'left',
-                      cursor: 'pointer',
-                    }}
-                    onMouseEnter={(e) => {
-                      if (!isSelected) e.currentTarget.style.background = 'var(--bg-hover)';
-                    }}
-                    onMouseLeave={(e) => {
-                      if (!isSelected) e.currentTarget.style.background = 'transparent';
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ fontSize: '0.95rem' }}>{m.icon}</span>
-                      <div>
-                        <div style={{ fontWeight: isSelected ? 600 : 400 }}>{m.name}</div>
-                        <div style={{ fontSize: '0.6875rem', color: 'var(--text-tertiary)' }}>
-                          {m.provider}
-                        </div>
-                      </div>
-                    </div>
-                    {isSelected && <Check size={14} style={{ color: 'var(--brand-primary)' }} />}
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </div>
+        {/* Removed model dropdown selector for clean UI */}
 
         {/* Active model label during streaming or from router decision */}
         {activeModel && activeModel !== selectedModelId && (
@@ -326,6 +281,33 @@ export default function Header() {
           }}
         >
           <Brain size={18} />
+        </button>
+
+        {/* Notification Bell */}
+        <button
+          onClick={toggleNotifications}
+          title={notificationsEnabled ? 'Notifications enabled' : 'Turn on desktop notifications'}
+          style={{
+            padding: '8px',
+            borderRadius: 'var(--radius-sm)',
+            border: 'none',
+            background: 'transparent',
+            color: notificationsEnabled ? 'var(--brand-primary)' : 'var(--text-secondary)',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            transition: 'all var(--transition-fast)',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'var(--bg-hover)';
+            if (!notificationsEnabled) e.currentTarget.style.color = 'var(--text-primary)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'transparent';
+            if (!notificationsEnabled) e.currentTarget.style.color = 'var(--text-secondary)';
+          }}
+        >
+          {notificationsEnabled ? <Bell size={18} /> : <BellOff size={18} />}
         </button>
 
         <ThemeToggle />
