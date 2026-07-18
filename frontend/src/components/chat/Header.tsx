@@ -10,7 +10,7 @@ import PersonaSelector from './PersonaSelector';
 import { parseWebCode } from './SandboxPreview';
 import { Play } from 'lucide-react';
 
-const MODELS = [
+export const MODELS = [
   { id: 'auto', name: 'Smart Router (Auto)', provider: 'system', icon: '🧠' },
   { id: 'consensus', name: 'Consensus (Best Answer)', provider: 'system', icon: '🏆' },
   

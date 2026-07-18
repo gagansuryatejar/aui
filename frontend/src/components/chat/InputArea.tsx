@@ -14,23 +14,42 @@ import {
   FileText,
   ArrowUp,
   Globe,
+  ChevronDown,
+  Check,
 } from 'lucide-react';
 import { useChatStore } from '@/store/chat-store';
 import { useUIStore } from '@/store/ui-store';
+import { MODELS } from './Header';
 
 interface InputAreaProps {
   onSubmit?: () => void;
 }
 
 export default function InputArea({ onSubmit }: InputAreaProps) {
-  const { sendMessage, isStreaming, stopStreaming } = useChatStore();
+  const { sendMessage, isStreaming, stopStreaming, selectedModelId, setSelectedModelId } = useChatStore();
   const { webSearchEnabled, toggleWebSearch } = useUIStore();
 
   const [input, setInput] = useState('');
   const [files, setFiles] = useState<File[]>([]);
   const [isListening, setIsListening] = useState(false);
+  const [modelDropdownOpen, setModelDropdownOpen] = useState(false);
+  
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const recognitionRef = useRef<any | null>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    function handler(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setModelDropdownOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const selectedModel = MODELS.find((m) => m.id === selectedModelId) || MODELS[0];
 
   // Auto-resize textarea
   useEffect(() => {
@@ -197,6 +216,108 @@ export default function InputArea({ onSubmit }: InputAreaProps) {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Model Selector Pill */}
+      <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: '8px', position: 'relative' }} ref={dropdownRef}>
+        <button
+          type="button"
+          onClick={() => setModelDropdownOpen(!modelDropdownOpen)}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '5px 12px',
+            borderRadius: 'var(--radius-full)',
+            border: '1px solid var(--border-primary)',
+            background: 'var(--bg-secondary)',
+            color: 'var(--text-primary)',
+            fontSize: '0.75rem',
+            fontWeight: 500,
+            cursor: 'pointer',
+            boxShadow: 'var(--shadow-sm)',
+            transition: 'all var(--transition-fast)',
+            backdropFilter: 'blur(8px)',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.borderColor = 'var(--brand-primary)';
+            e.currentTarget.style.boxShadow = '0 0 0 2px rgba(99, 102, 241, 0.15)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.borderColor = 'var(--border-primary)';
+            e.currentTarget.style.boxShadow = 'var(--shadow-sm)';
+          }}
+        >
+          <span>{selectedModel.icon}</span>
+          <span>{selectedModel.name}</span>
+          <ChevronDown size={11} style={{ color: 'var(--text-tertiary)' }} />
+        </button>
+
+        {modelDropdownOpen && (
+          <div
+            style={{
+              position: 'absolute',
+              bottom: 'calc(100% + 8px)',
+              left: 0,
+              width: 250,
+              maxHeight: 280,
+              overflowY: 'auto',
+              background: 'var(--bg-secondary)',
+              border: '1px solid var(--border-primary)',
+              borderRadius: 'var(--radius-md)',
+              boxShadow: 'var(--shadow-lg)',
+              padding: '6px 0',
+              zIndex: 35,
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+          >
+            <div style={{ padding: '6px 14px', fontSize: '0.6875rem', fontWeight: 600, color: 'var(--text-tertiary)', borderBottom: '1px solid var(--border-primary)', marginBottom: '4px' }}>
+              Select Intelligence Layer
+            </div>
+            {MODELS.map((m) => {
+              const isSelected = selectedModelId === m.id;
+              return (
+                <button
+                  key={m.id}
+                  type="button"
+                  onClick={() => {
+                    setSelectedModelId(m.id);
+                    setModelDropdownOpen(false);
+                  }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    width: '100%',
+                    padding: '8px 14px',
+                    border: 'none',
+                    background: isSelected ? 'var(--bg-hover)' : 'transparent',
+                    color: 'var(--text-primary)',
+                    fontSize: '0.8125rem',
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isSelected) e.currentTarget.style.background = 'var(--bg-hover)';
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isSelected) e.currentTarget.style.background = 'transparent';
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '0.9rem' }}>{m.icon}</span>
+                    <div>
+                      <div style={{ fontWeight: isSelected ? 600 : 400 }}>{m.name}</div>
+                      <div style={{ fontSize: '0.6875rem', color: 'var(--text-tertiary)' }}>{m.provider}</div>
+                    </div>
+                  </div>
+                  {isSelected && <Check size={14} style={{ color: 'var(--brand-primary)' }} />}
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
 
       {/* Input container */}
       <div
