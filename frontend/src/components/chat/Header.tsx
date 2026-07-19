@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Menu, Sparkles, Settings, ChevronDown, Check, Cpu, Brain, Bell, BellOff } from 'lucide-react';
+import { Menu, Sparkles, Settings, ChevronDown, Check, Cpu, Brain, Bell, BellOff, Search } from 'lucide-react';
 import { useUIStore } from '@/store/ui-store';
 import { useChatStore } from '@/store/chat-store';
 import { useMemoryStore } from '@/store/memory-store';
@@ -139,39 +139,42 @@ export default function Header() {
 
   const selectedModel = MODELS.find((m) => m.id === selectedModelId) || MODELS[0];
 
+  const iconBtnStyle: React.CSSProperties = {
+    padding: '8px',
+    borderRadius: 'var(--radius-md)',
+    border: 'none',
+    background: 'transparent',
+    color: 'var(--text-secondary)',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    transition: 'all 0.2s var(--ease-smooth)',
+  };
+
   return (
     <header
+      className="glass-nav"
       style={{
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
         padding: '0 16px',
         height: 'var(--header-height)',
-        borderBottom: '1px solid var(--border-primary)',
-        background: 'var(--bg-primary)',
+        margin: '8px 8px 0 8px',
+        borderRadius: 'var(--radius-xl)',
         flexShrink: 0,
         zIndex: 30,
+        gap: '12px',
       }}
     >
-      {/* Left */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, flex: 1 }}>
+      {/* Left — Logo + Toggle + Search Hint */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0, flex: 1 }}>
         <button
           onClick={toggleSidebar}
           title={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
-          style={{
-            padding: '8px',
-            borderRadius: 'var(--radius-sm)',
-            border: 'none',
-            background: 'transparent',
-            color: 'var(--text-secondary)',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            transition: 'all var(--transition-fast)',
-            flexShrink: 0,
-          }}
+          style={iconBtnStyle}
           onMouseEnter={(e) => {
-            e.currentTarget.style.background = 'var(--bg-hover)';
+            e.currentTarget.style.background = 'var(--glass-hover)';
             e.currentTarget.style.color = 'var(--text-primary)';
           }}
           onMouseLeave={(e) => {
@@ -179,53 +182,104 @@ export default function Header() {
             e.currentTarget.style.color = 'var(--text-secondary)';
           }}
         >
-          <Menu size={20} />
+          <Menu size={18} />
         </button>
 
-        <div style={{ display: 'none', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+        {/* AUI Logo */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
           <div
             style={{
-              width: 22,
-              height: 22,
+              width: 28,
+              height: 28,
               borderRadius: 'var(--radius-sm)',
-              background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+              background: 'linear-gradient(135deg, var(--brand), var(--accent))',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
+              boxShadow: '0 0 16px rgba(108, 99, 255, 0.3)',
             }}
           >
-            <Sparkles size={12} color="white" />
+            <Sparkles size={14} color="white" />
           </div>
           <span
             style={{
-              fontWeight: 600,
-              fontSize: '0.9rem',
+              fontWeight: 700,
+              fontSize: '0.95rem',
               color: 'var(--text-primary)',
+              letterSpacing: '-0.02em',
             }}
           >
             AUI
           </span>
+          <span style={{ fontSize: '0.65rem', color: 'var(--text-tertiary)', fontWeight: 500 }}>3.0</span>
         </div>
 
-        {/* Removed model dropdown selector for clean UI */}
+        {/* Search Hint */}
+        {!isMobile && (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '5px 12px',
+              borderRadius: 'var(--radius-full)',
+              background: 'var(--glass)',
+              border: '1px solid var(--glass-border)',
+              cursor: 'pointer',
+              marginLeft: '8px',
+              transition: 'all 0.2s var(--ease-smooth)',
+            }}
+            onClick={() => {
+              // Will trigger CommandPalette via Ctrl+K
+              const evt = new KeyboardEvent('keydown', { key: 'k', ctrlKey: true, bubbles: true });
+              document.dispatchEvent(evt);
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'var(--glass-hover)';
+              e.currentTarget.style.borderColor = 'var(--glass-border-hover)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'var(--glass)';
+              e.currentTarget.style.borderColor = 'var(--glass-border)';
+            }}
+          >
+            <Search size={12} style={{ color: 'var(--text-tertiary)' }} />
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>Search…</span>
+            <kbd
+              style={{
+                fontSize: '0.6rem',
+                padding: '1px 5px',
+                borderRadius: '4px',
+                background: 'var(--glass)',
+                border: '1px solid var(--glass-border)',
+                color: 'var(--text-tertiary)',
+                fontFamily: 'inherit',
+                marginLeft: '4px',
+              }}
+            >
+              ⌘K
+            </kbd>
+          </div>
+        )}
 
-        {/* Active model label during streaming or from router decision */}
+        {/* Active model label */}
         {activeModel && activeModel !== selectedModelId && (
           <span
-            title={`Currently executing model: ${activeModel}`}
+            title={`Currently executing: ${activeModel}`}
             style={{
-              fontSize: '0.72rem',
-              color: 'var(--text-tertiary)',
-              background: 'var(--bg-tertiary)',
+              fontSize: '0.7rem',
+              color: 'var(--accent)',
+              background: 'var(--accent-muted)',
               padding: '3px 10px',
               borderRadius: 'var(--radius-full)',
-              border: '1px solid var(--border-primary)',
-              maxWidth: '130px',
+              border: '1px solid rgba(0, 229, 255, 0.15)',
+              maxWidth: '150px',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
               whiteSpace: 'nowrap',
               display: 'inline-block',
               flexShrink: 1,
+              fontWeight: 500,
             }}
           >
             ⚡ {getShortModelName(activeModel)}
@@ -234,9 +288,8 @@ export default function Header() {
       </div>
 
       {/* Right */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
-        {/* Persona Selector Dropdown */}
-        {/* Live Preview Button */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
+        {/* Live Preview */}
         {webCode.hasCode && (
           <button
             onClick={() => setPreviewOpen(!previewOpen)}
@@ -247,105 +300,60 @@ export default function Header() {
               gap: '6px',
               padding: isMobile ? '8px' : '6px 14px',
               borderRadius: 'var(--radius-full)',
-              border: '1px solid var(--border-primary)',
-              background: previewOpen ? 'rgba(99, 102, 241, 0.15)' : 'var(--bg-secondary)',
-              color: previewOpen ? 'var(--brand-primary)' : 'var(--text-primary)',
+              border: '1px solid',
+              borderColor: previewOpen ? 'rgba(108, 99, 255, 0.3)' : 'var(--glass-border)',
+              background: previewOpen ? 'var(--brand-muted)' : 'var(--glass)',
+              color: previewOpen ? 'var(--brand)' : 'var(--text-primary)',
               fontSize: '0.8125rem',
               fontWeight: 500,
               cursor: 'pointer',
-              transition: 'all var(--transition-fast)',
-              boxShadow: previewOpen ? '0 0 12px rgba(99, 102, 241, 0.3)' : 'var(--shadow-sm)',
+              transition: 'all 0.2s var(--ease-smooth)',
+              boxShadow: previewOpen ? 'var(--shadow-glow)' : 'none',
             }}
           >
             <Play size={13} style={{ fill: previewOpen ? 'currentColor' : 'none' }} />
-            {!isMobile && <span>Live Preview</span>}
+            {!isMobile && <span>Preview</span>}
           </button>
         )}
 
         <PersonaSelector selectedPersona={activePersona} onSelect={setActivePersona} />
 
-        {/* Memory button */}
+        {/* Memory */}
         <button
           onClick={() => useMemoryStore.getState().setPanelOpen(true)}
           title="Memory"
-          style={{
-            padding: '8px',
-            borderRadius: 'var(--radius-sm)',
-            border: 'none',
-            background: 'transparent',
-            color: 'var(--text-secondary)',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            transition: 'all var(--transition-fast)',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = 'var(--bg-hover)';
-            e.currentTarget.style.color = 'var(--text-primary)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = 'transparent';
-            e.currentTarget.style.color = 'var(--text-secondary)';
-          }}
+          style={iconBtnStyle}
+          onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--glass-hover)'; e.currentTarget.style.color = 'var(--text-primary)'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-secondary)'; }}
         >
-          <Brain size={18} />
+          <Brain size={17} />
         </button>
 
-        {/* Notification Bell */}
+        {/* Notifications */}
         <button
           onClick={toggleNotifications}
-          title={notificationsEnabled ? 'Notifications enabled' : 'Turn on desktop notifications'}
-          style={{
-            padding: '8px',
-            borderRadius: 'var(--radius-sm)',
-            border: 'none',
-            background: 'transparent',
-            color: notificationsEnabled ? 'var(--brand-primary)' : 'var(--text-secondary)',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            transition: 'all var(--transition-fast)',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = 'var(--bg-hover)';
-            if (!notificationsEnabled) e.currentTarget.style.color = 'var(--text-primary)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = 'transparent';
-            if (!notificationsEnabled) e.currentTarget.style.color = 'var(--text-secondary)';
-          }}
+          title={notificationsEnabled ? 'Notifications enabled' : 'Turn on notifications'}
+          style={{ ...iconBtnStyle, color: notificationsEnabled ? 'var(--brand)' : 'var(--text-secondary)' }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--glass-hover)'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
         >
-          {notificationsEnabled ? <Bell size={18} /> : <BellOff size={18} />}
+          {notificationsEnabled ? <Bell size={17} /> : <BellOff size={17} />}
         </button>
 
         <ThemeToggle />
 
+        {/* Settings */}
         <button
           onClick={() => setSettingsOpen(true)}
           title="Settings"
-          style={{
-            padding: '8px',
-            borderRadius: 'var(--radius-sm)',
-            border: 'none',
-            background: 'transparent',
-            color: 'var(--text-secondary)',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            transition: 'all var(--transition-fast)',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = 'var(--bg-hover)';
-            e.currentTarget.style.color = 'var(--text-primary)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = 'transparent';
-            e.currentTarget.style.color = 'var(--text-secondary)';
-          }}
+          style={iconBtnStyle}
+          onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--glass-hover)'; e.currentTarget.style.color = 'var(--text-primary)'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-secondary)'; }}
         >
-          <Settings size={18} />
+          <Settings size={17} />
         </button>
       </div>
     </header>
   );
 }
+
