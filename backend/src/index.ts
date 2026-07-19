@@ -14,6 +14,7 @@ import { personaRoutes } from './routes/personas.js';
 import { memoryRoutes } from './routes/memory.js';
 import { securityRoutes } from './routes/security.js';
 import { learningRoutes } from './routes/learning.js';
+import { speechRoutes } from './routes/speech.js';
 import { configureSecurityHeaders } from './middleware/security-headers.js';
 
 async function main() {
@@ -75,6 +76,7 @@ async function main() {
   await app.register(memoryRoutes);
   await app.register(securityRoutes);
   await app.register(learningRoutes);
+  await app.register(speechRoutes);
 
   // ── Root ────────────────────────────────────────────
   app.get('/', async () => ({

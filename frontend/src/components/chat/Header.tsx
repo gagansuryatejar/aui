@@ -48,6 +48,14 @@ export const MODELS = [
 
   // Cohere
   { id: 'cohere/command-r-plus', name: 'Command R+ (Cohere)', provider: 'Cohere', icon: '🏰' },
+
+  // AUI 3.0 Specialized Models
+  { id: 'deepseek/deepseek-r1', name: 'DeepSeek R1 (Reasoning)', provider: 'AUI 3.0 Core', icon: '🔮' },
+  { id: 'qwen/qwen-2.5-coder-32b', name: 'Qwen 2.5 Coder (Coding)', provider: 'AUI 3.0 Core', icon: '💻' },
+  { id: 'internvl/internvl-chat', name: 'InternVL Chat (Vision)', provider: 'AUI 3.0 Core', icon: '👁️' },
+  { id: 'whisper/whisper-large-v3', name: 'Whisper Large V3 (Speech)', provider: 'AUI 3.0 Core', icon: '🎤' },
+  { id: 'flux/flux-1-dev', name: 'FLUX.1 Dev (Image Gen)', provider: 'AUI 3.0 Core', icon: '🖼️' },
+  { id: 'wan/wan-2.1', name: 'Wan 2.1 (Video Gen)', provider: 'AUI 3.0 Core', icon: '🎥' },
   { id: 'cohere/command-r', name: 'Command R (Cohere)', provider: 'Cohere', icon: '🛡️' },
 
   // Mistral
