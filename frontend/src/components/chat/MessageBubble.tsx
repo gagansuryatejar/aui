@@ -60,10 +60,15 @@ export default function MessageBubble({
       style={{
         display: 'flex',
         gap: '16px',
-        padding: '24px 0',
-        maxWidth: '48rem',
+        padding: '24px 16px',
+        maxWidth: '50rem',
         width: '100%',
-        margin: '0 auto',
+        margin: '0 auto 12px auto',
+        borderRadius: 'var(--radius-xl)',
+        background: isUser ? 'rgba(108, 99, 255, 0.03)' : 'var(--glass)',
+        border: '1px solid',
+        borderColor: isUser ? 'rgba(108, 99, 255, 0.08)' : 'var(--glass-border)',
+        backdropFilter: 'blur(12px)',
       }}
     >
       {/* Avatar */}
@@ -71,19 +76,19 @@ export default function MessageBubble({
         style={{
           width: 32,
           height: 32,
-          borderRadius: 'var(--radius-full)',
+          borderRadius: '50%',
           flexShrink: 0,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           background: isUser
-            ? 'linear-gradient(135deg, #6366f1, #8b5cf6)'
-            : 'linear-gradient(135deg, #10b981, #06b6d4)',
+            ? 'linear-gradient(135deg, var(--brand), #8b5cf6)'
+            : 'linear-gradient(135deg, var(--brand), var(--accent))',
           color: 'white',
-          boxShadow: 'var(--shadow-sm)',
+          boxShadow: isUser ? '0 4px 12px rgba(108, 99, 255, 0.2)' : '0 4px 12px rgba(0, 229, 255, 0.2)',
         }}
       >
-        {isUser ? <User size={16} /> : <Sparkles size={16} />}
+        {isUser ? <User size={15} /> : <Sparkles size={15} />}
       </div>
 
       {/* Content */}
@@ -104,22 +109,23 @@ export default function MessageBubble({
           {!isUser && message.model && (
             <span
               style={{
-                fontSize: '0.6875rem',
-                fontWeight: 400,
-                color: 'var(--text-tertiary)',
-                background: 'var(--bg-tertiary)',
+                fontSize: '0.65rem',
+                fontWeight: 500,
+                color: 'var(--accent)',
+                background: 'var(--accent-muted)',
                 padding: '2px 8px',
                 borderRadius: 'var(--radius-full)',
+                border: '1px solid rgba(0, 229, 255, 0.1)',
               }}
             >
-              {message.model}
+              {message.model.split('/').pop()}
             </span>
           )}
           {isStreaming && (
             <span style={{ display: 'flex', gap: '3px', alignItems: 'center' }}>
-              <span style={{ animation: 'typingDot 1.4s infinite 0s', width: 4, height: 4, borderRadius: '50%', background: 'var(--brand-primary)', display: 'inline-block' }} />
-              <span style={{ animation: 'typingDot 1.4s infinite 0.2s', width: 4, height: 4, borderRadius: '50%', background: 'var(--brand-primary)', display: 'inline-block' }} />
-              <span style={{ animation: 'typingDot 1.4s infinite 0.4s', width: 4, height: 4, borderRadius: '50%', background: 'var(--brand-primary)', display: 'inline-block' }} />
+              <span style={{ animation: 'typingDot 1.4s infinite 0s', width: 4, height: 4, borderRadius: '50%', background: 'var(--brand)', display: 'inline-block' }} />
+              <span style={{ animation: 'typingDot 1.4s infinite 0.2s', width: 4, height: 4, borderRadius: '50%', background: 'var(--brand)', display: 'inline-block' }} />
+              <span style={{ animation: 'typingDot 1.4s infinite 0.4s', width: 4, height: 4, borderRadius: '50%', background: 'var(--brand)', display: 'inline-block' }} />
             </span>
           )}
         </div>
@@ -135,10 +141,10 @@ export default function MessageBubble({
                 minHeight: '100px',
                 padding: '12px',
                 borderRadius: 'var(--radius-md)',
-                border: '1px solid var(--border-focus)',
-                background: 'var(--bg-input)',
+                border: '1px solid var(--brand)',
+                background: 'var(--bg-elevated)',
                 color: 'var(--text-primary)',
-                fontSize: '0.9375rem',
+                fontSize: '0.875rem',
                 fontFamily: 'inherit',
                 lineHeight: 1.6,
                 resize: 'vertical',
@@ -262,12 +268,14 @@ export default function MessageBubble({
               <span
                 style={{
                   display: 'inline-block',
-                  width: '2px',
-                  height: '1.1em',
-                  background: 'var(--brand-primary)',
-                  marginLeft: '2px',
-                  verticalAlign: 'text-bottom',
+                  width: '5px',
+                  height: '13px',
+                  background: 'var(--brand)',
+                  marginLeft: '3px',
+                  verticalAlign: 'middle',
                   animation: 'pulse 1s infinite',
+                  boxShadow: 'var(--shadow-glow)',
+                  borderRadius: '1px',
                 }}
               />
             )}

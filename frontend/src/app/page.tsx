@@ -14,6 +14,8 @@ import WelcomePopup from '@/components/common/WelcomePopup';
 import { apiGet } from '@/lib/api';
 import SandboxPreview, { parseWebCode } from '@/components/chat/SandboxPreview';
 import MemoryPanel from '@/components/memory/MemoryPanel';
+import CommandPalette from '@/components/common/CommandPalette';
+
 
 export default function Home() {
   const { setIsMobile, isMobile, sidebarOpen, isAuthenticated, setUser, authModalOpen, setAuthModalOpen, previewOpen, setPreviewOpen } = useUIStore();
@@ -136,6 +138,9 @@ export default function Home() {
 
       {/* Memory panel */}
       <MemoryPanel />
+
+      {/* Command palette */}
+      <CommandPalette />
 
       {/* Welcome popup */}
       <WelcomePopup />

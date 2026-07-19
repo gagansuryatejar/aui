@@ -1,23 +1,54 @@
 'use client';
 
-import React, { useRef, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { Sparkles, Code, Lightbulb, BookOpen } from 'lucide-react';
+import React, { useRef, useEffect, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  Sparkles,
+  Code,
+  Lightbulb,
+  BookOpen,
+  Brain,
+  CheckSquare,
+  Clock,
+  Gauge,
+  Terminal,
+  ShieldCheck,
+  Zap,
+  ArrowRight,
+  TrendingUp,
+} from 'lucide-react';
 import MessageBubble from './MessageBubble';
 import InputArea from './InputArea';
 import { useChatStore } from '@/store/chat-store';
+import { useUIStore } from '@/store/ui-store';
+import { useMemoryStore } from '@/store/memory-store';
 
 export default function ChatArea() {
-  const { messages, isStreaming, editMessage, regenerateLastResponse, sendMessage } =
-    useChatStore();
+  const { messages, isStreaming, editMessage, regenerateLastResponse, sendMessage } = useChatStore();
+  const { user } = useUIStore();
+  const { memories, loadMemories } = useMemoryStore();
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const prevMsgCount = useRef(0);
 
+  const [greeting, setGreeting] = useState('Hello');
+
+  useEffect(() => {
+    const hour = new Date().getHours();
+    if (hour < 12) setGreeting('Good Morning');
+    else if (hour < 18) setGreeting('Good Afternoon');
+    else setGreeting('Good Evening');
+  }, []);
+
+  // Fetch memories once on welcome screen load
+  useEffect(() => {
+    if (messages.length === 0) {
+      loadMemories().catch(() => {});
+    }
+  }, [messages.length, loadMemories]);
+
   // Auto-scroll to bottom when new messages arrive.
-  // Use instant scroll during streaming to avoid mobile jank;
-  // smooth scroll only on new user message submission.
   useEffect(() => {
     const el = messagesEndRef.current;
     if (!el) return;
@@ -26,34 +57,42 @@ export default function ChatArea() {
     el.scrollIntoView({ behavior: isStreaming ? 'auto' : (isNewMessage ? 'smooth' : 'auto') });
   }, [messages, isStreaming]);
 
-
   const isEmpty = messages.length === 0;
+
+  const userName = user?.name || 'Gagan';
 
   const suggestions = [
     {
       icon: <Code size={18} />,
       title: 'Write code',
       prompt: 'Write a TypeScript function to validate email addresses with regex',
-      color: '#6366f1',
+      color: '#6C63FF',
     },
     {
       icon: <Lightbulb size={18} />,
       title: 'Brainstorm ideas',
       prompt: 'Give me 10 creative project ideas for learning machine learning',
-      color: '#f59e0b',
+      color: '#00E5FF',
     },
     {
       icon: <BookOpen size={18} />,
       title: 'Explain a concept',
       prompt: 'Explain how transformers work in AI, with simple analogies',
-      color: '#10b981',
+      color: '#22C55E',
     },
     {
       icon: <Sparkles size={18} />,
       title: 'Creative writing',
       prompt: 'Write a short sci-fi story about an AI that discovers music',
-      color: '#ec4899',
+      color: '#E53E3E',
     },
+  ];
+
+  // Hardcoded mock goals for home Bento card to look rich and dynamic
+  const homeGoals = [
+    { id: 'g1', title: 'Launch AUI 3.0 Platform', completed: true },
+    { id: 'g2', title: 'Configure voice synthesis channels', completed: true },
+    { id: 'g3', title: 'Connect local vector agent memory', completed: false },
   ];
 
   return (
@@ -76,138 +115,285 @@ export default function ChatArea() {
         }}
       >
         {isEmpty ? (
-          /* Welcome screen */
+          /* Premium Bento Grid Home Page */
           <div
             style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              height: '100%',
-              padding: '2rem',
-              maxWidth: '48rem',
+              padding: '24px 0 40px 0',
+              maxWidth: '68rem',
               margin: '0 auto',
+              width: '100%',
             }}
           >
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
+            {/* Hero Greeting Section with AI Orb */}
+            <div
               style={{
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
+                textAlign: 'center',
+                marginTop: '2rem',
+                marginBottom: '2.5rem',
                 gap: '16px',
-                marginBottom: '3rem',
               }}
             >
-              <div
-                style={{
-                  width: 56,
-                  height: 56,
-                  borderRadius: 'var(--radius-lg)',
-                  background: 'linear-gradient(135deg, #6366f1, #8b5cf6, #06b6d4)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  boxShadow: 'var(--shadow-glow)',
-                }}
-              >
-                <Sparkles size={28} color="white" />
+              {/* Dynamic Breathing AI Orb */}
+              <div style={{ marginBottom: '8px' }}>
+                <div className={`ai-orb ${isStreaming ? 'ai-orb-thinking' : ''}`} />
               </div>
-              <h1
-                style={{
-                  fontSize: '1.75rem',
-                  fontWeight: 700,
-                  background: 'linear-gradient(135deg, var(--text-primary), var(--text-secondary))',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                }}
-              >
-                How can I help you today?
-              </h1>
-              <p
-                style={{
-                  color: 'var(--text-tertiary)',
-                  fontSize: '0.9375rem',
-                  textAlign: 'center',
-                  maxWidth: '28rem',
-                }}
-              >
-                I can help with coding, analysis, writing, math, and much more.
-                Ask me anything to get started.
-              </p>
-            </motion.div>
 
-            {/* Suggestion cards */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.15 }}
+              <motion.h1
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+                className="gradient-text"
+                style={{
+                  fontSize: '2.5rem',
+                  fontWeight: 800,
+                  letterSpacing: '-0.03em',
+                  margin: 0,
+                }}
+              >
+                {greeting}, {userName} 👋
+              </motion.h1>
+              <motion.p
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.1 }}
+                style={{
+                  color: 'var(--text-secondary)',
+                  fontSize: '1rem',
+                  maxWidth: '30rem',
+                  margin: 0,
+                }}
+              >
+                AUI 3.0 Unified Operational OS. Choose an assistant agent or ask anything to begin execution.
+              </motion.p>
+            </div>
+
+            {/* Bento Grid */}
+            <div
               style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-                gap: '12px',
+                gridTemplateColumns: 'repeat(12, 1fr)',
+                gap: '16px',
                 width: '100%',
-                maxWidth: '40rem',
               }}
             >
-              {suggestions.map((s, i) => (
-                <motion.button
-                  key={s.title}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2 + i * 0.08 }}
-                  onClick={() => sendMessage(s.prompt)}
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '10px',
-                    padding: '16px',
-                    borderRadius: 'var(--radius-md)',
-                    border: '1px solid var(--border-primary)',
-                    background: 'var(--bg-secondary)',
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                    transition: 'all var(--transition-fast)',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = s.color;
-                    e.currentTarget.style.boxShadow = `0 0 0 1px ${s.color}22`;
-                    e.currentTarget.style.transform = 'translateY(-2px)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = 'var(--border-primary)';
-                    e.currentTarget.style.boxShadow = 'none';
-                    e.currentTarget.style.transform = 'translateY(0)';
-                  }}
-                >
-                  <span style={{ color: s.color }}>{s.icon}</span>
-                  <span
+              {/* Goals OS Card (6 cols) */}
+              <div
+                className="glass-card border-glow"
+                style={{
+                  gridColumn: 'span 6',
+                  padding: '20px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '14px',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <CheckSquare size={16} style={{ color: 'var(--brand)' }} />
+                    <span style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--text-primary)' }}>Today's Goals</span>
+                  </div>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--brand)', fontWeight: 500 }}>Active Goal OS</span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', flex: 1, justifyContent: 'center' }}>
+                  {homeGoals.map((g) => (
+                    <div
+                      key={g.id}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '10px',
+                        background: 'rgba(255, 255, 255, 0.02)',
+                        padding: '8px 12px',
+                        borderRadius: 'var(--radius-sm)',
+                        border: '1px solid rgba(255,255,255,0.03)',
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={g.completed}
+                        readOnly
+                        style={{
+                          accentColor: 'var(--brand)',
+                          cursor: 'pointer',
+                        }}
+                      />
+                      <span
+                        style={{
+                          fontSize: '0.8125rem',
+                          color: g.completed ? 'var(--text-secondary)' : 'var(--text-primary)',
+                          textDecoration: g.completed ? 'line-through' : 'none',
+                        }}
+                      >
+                        {g.title}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* System Performance Card (6 cols) */}
+              <div
+                className="glass-card border-glow"
+                style={{
+                  gridColumn: 'span 6',
+                  padding: '20px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '14px',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Gauge size={16} style={{ color: 'var(--accent)' }} />
+                  <span style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--text-primary)' }}>System Audit & Performance</span>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px', flex: 1 }}>
+                  <div
                     style={{
-                      fontSize: '0.875rem',
-                      fontWeight: 500,
-                      color: 'var(--text-primary)',
+                      background: 'rgba(255, 255, 255, 0.02)',
+                      padding: '12px',
+                      borderRadius: 'var(--radius-sm)',
+                      border: '1px solid rgba(255,255,255,0.03)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '4px',
                     }}
                   >
-                    {s.title}
-                  </span>
-                  <span
+                    <span style={{ fontSize: '0.65rem', color: 'var(--text-tertiary)', textTransform: 'uppercase' }}>Routing Mode</span>
+                    <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--accent)' }}>Smart Auto Router</span>
+                  </div>
+                  <div
                     style={{
-                      fontSize: '0.8125rem',
-                      color: 'var(--text-tertiary)',
-                      lineHeight: 1.4,
+                      background: 'rgba(255, 255, 255, 0.02)',
+                      padding: '12px',
+                      borderRadius: 'var(--radius-sm)',
+                      border: '1px solid rgba(255,255,255,0.03)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '4px',
                     }}
                   >
-                    {s.prompt}
-                  </span>
-                </motion.button>
-              ))}
-            </motion.div>
+                    <span style={{ fontSize: '0.65rem', color: 'var(--text-tertiary)', textTransform: 'uppercase' }}>API Latency</span>
+                    <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--success)' }}>12 ms</span>
+                  </div>
+                  <div
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.02)',
+                      padding: '12px',
+                      borderRadius: 'var(--radius-sm)',
+                      border: '1px solid rgba(255,255,255,0.03)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '4px',
+                    }}
+                  >
+                    <span style={{ fontSize: '0.65rem', color: 'var(--text-tertiary)', textTransform: 'uppercase' }}>Speech Channels</span>
+                    <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)' }}>Whisper V3 / Kokoro</span>
+                  </div>
+                  <div
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.02)',
+                      padding: '12px',
+                      borderRadius: 'var(--radius-sm)',
+                      border: '1px solid rgba(255,255,255,0.03)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '4px',
+                    }}
+                  >
+                    <span style={{ fontSize: '0.65rem', color: 'var(--text-tertiary)', textTransform: 'uppercase' }}>Security Layer</span>
+                    <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--success)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <ShieldCheck size={12} /> Active
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Cognitive Memory Sync Preview (4 cols) */}
+              <div
+                className="glass-card border-glow"
+                style={{
+                  gridColumn: 'span 4',
+                  padding: '20px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '14px',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Brain size={16} style={{ color: 'var(--brand)' }} />
+                  <span style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--text-primary)' }}>Cognitive Memory</span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
+                  {memories && memories.length > 0 ? (
+                    memories.slice(0, 3).map((m) => (
+                      <div
+                        key={m.id}
+                        style={{
+                          fontSize: '0.75rem',
+                          color: 'var(--text-secondary)',
+                          lineHeight: 1.3,
+                          background: 'rgba(255,255,255,0.01)',
+                          padding: '6px 10px',
+                          borderRadius: '6px',
+                          borderLeft: '2px solid var(--brand)',
+                        }}
+                      >
+                        {m.content.length > 60 ? `${m.content.slice(0, 60)}…` : m.content}
+                      </div>
+                    ))
+                  ) : (
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', textAlign: 'center', padding: '16px 0' }}>
+                      No memories recorded yet. AUI will automatically memorize your preferences as you chat.
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Quick Action Suggestion Bento Cards (8 cols) */}
+              <div
+                style={{
+                  gridColumn: 'span 8',
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(2, 1fr)',
+                  gap: '12px',
+                }}
+              >
+                {suggestions.map((s) => (
+                  <button
+                    key={s.title}
+                    onClick={() => sendMessage(s.prompt)}
+                    className="glass-card border-glow hover-lift"
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '8px',
+                      padding: '16px',
+                      borderRadius: 'var(--radius-xl)',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      background: 'var(--glass)',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ color: s.color }}>{s.icon}</span>
+                      <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                        {s.title}
+                      </span>
+                    </div>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
+                      {s.prompt}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         ) : (
           /* Message list */
-          <div style={{ paddingTop: '16px', paddingBottom: '16px' }}>
+          <div style={{ paddingTop: '20px', paddingBottom: '20px' }}>
             {messages.map((msg, index) => (
               <MessageBubble
                 key={msg.id}

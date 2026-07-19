@@ -152,50 +152,56 @@ export default function InputArea({ onSubmit }: InputAreaProps) {
   return (
     <div
       style={{
-        padding: '0 16px 24px',
-        maxWidth: '48rem',
+        padding: '0 24px 24px 24px',
+        maxWidth: '50rem',
         width: '100%',
         margin: '0 auto',
+        position: 'relative',
+        zIndex: 20,
       }}
     >
       {/* File previews */}
       <AnimatePresence>
         {files.length > 0 && (
           <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
             style={{
               display: 'flex',
               gap: '8px',
               flexWrap: 'wrap',
-              marginBottom: '8px',
+              marginBottom: '10px',
+              padding: '6px',
+              background: 'var(--glass)',
+              borderRadius: 'var(--radius-md)',
+              border: '1px solid var(--glass-border)',
             }}
           >
             {files.map((file, i) => (
               <motion.div
                 key={`${file.name}-${i}`}
-                initial={{ opacity: 0, scale: 0.9 }}
+                initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
+                exit={{ opacity: 0, scale: 0.95 }}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
                   gap: '8px',
-                  padding: '6px 10px',
-                  borderRadius: 'var(--radius-sm)',
-                  background: 'var(--bg-tertiary)',
-                  border: '1px solid var(--border-primary)',
-                  fontSize: '0.8125rem',
-                  color: 'var(--text-secondary)',
+                  padding: '6px 12px',
+                  borderRadius: 'var(--radius-full)',
+                  background: 'var(--bg-surface)',
+                  border: '1px solid var(--glass-border)',
+                  fontSize: '0.75rem',
+                  color: 'var(--text-primary)',
                 }}
               >
                 {file.type.startsWith('image/') ? (
-                  <ImageIcon size={14} style={{ color: 'var(--brand-primary)' }} />
+                  <ImageIcon size={13} style={{ color: 'var(--brand)' }} />
                 ) : (
-                  <FileText size={14} style={{ color: 'var(--brand-primary)' }} />
+                  <FileText size={13} style={{ color: 'var(--brand)' }} />
                 )}
-                <span style={{ maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <span style={{ maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 500 }}>
                   {file.name}
                 </span>
                 <button
@@ -203,13 +209,13 @@ export default function InputArea({ onSubmit }: InputAreaProps) {
                   style={{
                     background: 'transparent',
                     border: 'none',
-                    color: 'var(--text-tertiary)',
+                    color: 'var(--text-secondary)',
                     cursor: 'pointer',
                     padding: '2px',
                     display: 'flex',
                   }}
                 >
-                  <X size={12} />
+                  <X size={11} />
                 </button>
               </motion.div>
             ))}
@@ -217,310 +223,258 @@ export default function InputArea({ onSubmit }: InputAreaProps) {
         )}
       </AnimatePresence>
 
-      {/* Model Selector Pill */}
-      <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: '8px', position: 'relative' }} ref={dropdownRef}>
-        <button
-          type="button"
-          onClick={() => setModelDropdownOpen(!modelDropdownOpen)}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            padding: '5px 12px',
-            borderRadius: 'var(--radius-full)',
-            border: '1px solid var(--border-primary)',
-            background: 'var(--bg-secondary)',
-            color: 'var(--text-primary)',
-            fontSize: '0.75rem',
-            fontWeight: 500,
-            cursor: 'pointer',
-            boxShadow: 'var(--shadow-sm)',
-            transition: 'all var(--transition-fast)',
-            backdropFilter: 'blur(8px)',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.borderColor = 'var(--brand-primary)';
-            e.currentTarget.style.boxShadow = '0 0 0 2px rgba(99, 102, 241, 0.15)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.borderColor = 'var(--border-primary)';
-            e.currentTarget.style.boxShadow = 'var(--shadow-sm)';
-          }}
-        >
-          <span>{selectedModel.icon}</span>
-          <span>{selectedModel.name}</span>
-          <ChevronDown size={11} style={{ color: 'var(--text-tertiary)' }} />
-        </button>
-
-        {modelDropdownOpen && (
-          <div
+      {/* Model Selector Badges + Controls toolbar */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', gap: '8px' }}>
+        {/* Model dropdown badge */}
+        <div style={{ position: 'relative' }} ref={dropdownRef}>
+          <button
+            type="button"
+            onClick={() => setModelDropdownOpen(!modelDropdownOpen)}
             style={{
-              position: 'absolute',
-              bottom: 'calc(100% + 8px)',
-              left: 0,
-              width: 250,
-              maxHeight: 280,
-              overflowY: 'auto',
-              background: 'var(--bg-secondary)',
-              border: '1px solid var(--border-primary)',
-              borderRadius: 'var(--radius-md)',
-              boxShadow: 'var(--shadow-lg)',
-              padding: '6px 0',
-              zIndex: 35,
               display: 'flex',
-              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '4px 12px',
+              borderRadius: 'var(--radius-full)',
+              border: '1px solid var(--glass-border)',
+              background: 'var(--glass)',
+              color: 'var(--text-secondary)',
+              fontSize: '0.72rem',
+              fontWeight: 500,
+              cursor: 'pointer',
+              transition: 'all 0.2s var(--ease-smooth)',
+              backdropFilter: 'blur(12px)',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = 'var(--brand)';
+              e.currentTarget.style.color = 'var(--text-primary)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = 'var(--glass-border)';
+              e.currentTarget.style.color = 'var(--text-secondary)';
             }}
           >
-            <div style={{ padding: '6px 14px', fontSize: '0.6875rem', fontWeight: 600, color: 'var(--text-tertiary)', borderBottom: '1px solid var(--border-primary)', marginBottom: '4px' }}>
-              Select Intelligence Layer
-            </div>
-            {MODELS.map((m) => {
-              const isSelected = selectedModelId === m.id;
-              return (
-                <button
-                  key={m.id}
-                  type="button"
-                  onClick={() => {
-                    setSelectedModelId(m.id);
-                    setModelDropdownOpen(false);
-                  }}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    width: '100%',
-                    padding: '8px 14px',
-                    border: 'none',
-                    background: isSelected ? 'var(--bg-hover)' : 'transparent',
-                    color: 'var(--text-primary)',
-                    fontSize: '0.8125rem',
-                    textAlign: 'left',
-                    cursor: 'pointer',
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!isSelected) e.currentTarget.style.background = 'var(--bg-hover)';
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!isSelected) e.currentTarget.style.background = 'transparent';
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ fontSize: '0.9rem' }}>{m.icon}</span>
-                    <div>
-                      <div style={{ fontWeight: isSelected ? 600 : 400 }}>{m.name}</div>
-                      <div style={{ fontSize: '0.6875rem', color: 'var(--text-tertiary)' }}>{m.provider}</div>
-                    </div>
-                  </div>
-                  {isSelected && <Check size={14} style={{ color: 'var(--brand-primary)' }} />}
-                </button>
-              );
-            })}
-          </div>
-        )}
-      </div>
+            <span>{selectedModel.icon}</span>
+            <span>{selectedModel.name}</span>
+            <ChevronDown size={10} style={{ color: 'var(--text-tertiary)' }} />
+          </button>
 
-      {/* Input container */}
-      <div
-        {...getRootProps()}
-        style={{
-          position: 'relative',
-          borderRadius: 'var(--radius-lg)',
-          border: isDragActive
-            ? '2px solid var(--brand-primary)'
-            : '1px solid var(--border-primary)',
-          background: 'var(--bg-input)',
-          transition: 'all var(--transition-fast)',
-          boxShadow: isDragActive ? 'var(--shadow-glow)' : 'var(--shadow-sm)',
-        }}
-      >
-        {/* Drag overlay */}
-        <AnimatePresence>
-          {isDragActive && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
+          {modelDropdownOpen && (
+            <div
+              className="glass-card"
               style={{
                 position: 'absolute',
-                inset: 0,
-                borderRadius: 'var(--radius-lg)',
-                background: 'rgba(99, 102, 241, 0.08)',
+                bottom: 'calc(100% + 6px)',
+                left: 0,
+                width: 260,
+                maxHeight: 280,
+                overflowY: 'auto',
+                boxShadow: 'var(--shadow-lg)',
+                padding: '6px 0',
+                zIndex: 35,
                 display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                zIndex: 10,
-                pointerEvents: 'none',
+                flexDirection: 'column',
               }}
             >
-              <span
-                style={{
-                  color: 'var(--brand-primary)',
-                  fontWeight: 500,
-                  fontSize: '0.875rem',
-                }}
-              >
-                Drop files here…
-              </span>
-            </motion.div>
+              <div style={{ padding: '6px 14px', fontSize: '0.65rem', fontWeight: 600, color: 'var(--text-tertiary)', borderBottom: '1px solid var(--glass-border)', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                Select Intelligence Layer
+              </div>
+              {MODELS.map((m) => {
+                const isSelected = selectedModelId === m.id;
+                return (
+                  <button
+                    key={m.id}
+                    type="button"
+                    onClick={() => {
+                      setSelectedModelId(m.id);
+                      setModelDropdownOpen(false);
+                    }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      width: '100%',
+                      padding: '8px 14px',
+                      border: 'none',
+                      background: isSelected ? 'var(--glass-hover)' : 'transparent',
+                      color: 'var(--text-primary)',
+                      fontSize: '0.8125rem',
+                      textAlign: 'left',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s var(--ease-smooth)',
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isSelected) e.currentTarget.style.background = 'var(--glass-hover)';
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isSelected) e.currentTarget.style.background = 'transparent';
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ fontSize: '0.9rem' }}>{m.icon}</span>
+                      <div>
+                        <div style={{ fontWeight: isSelected ? 600 : 400, color: isSelected ? 'var(--brand)' : 'var(--text-primary)' }}>{m.name}</div>
+                        <div style={{ fontSize: '0.6875rem', color: 'var(--text-tertiary)' }}>{m.provider}</div>
+                      </div>
+                    </div>
+                    {isSelected && <Check size={13} style={{ color: 'var(--brand)' }} />}
+                  </button>
+                );
+              })}
+            </div>
           )}
-        </AnimatePresence>
+        </div>
 
-        <input {...getInputProps()} />
-
-        <div style={{ display: 'flex', alignItems: 'flex-end', padding: '8px' }}>
-          {/* Web Search toggle */}
+        {/* Action icons status triggers */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          {/* Web Search Toggle */}
           <button
             onClick={toggleWebSearch}
-            title={webSearchEnabled ? 'Web search enabled – click to disable' : 'Enable web search'}
+            title={webSearchEnabled ? 'Web search: Enabled' : 'Web search: Disabled'}
             style={{
-              padding: '8px',
-              borderRadius: 'var(--radius-sm)',
-              border: 'none',
-              background: webSearchEnabled ? 'rgba(59, 130, 246, 0.12)' : 'transparent',
-              color: webSearchEnabled ? '#3b82f6' : 'var(--text-tertiary)',
+              padding: '4px 10px',
+              borderRadius: 'var(--radius-full)',
+              border: '1px solid',
+              borderColor: webSearchEnabled ? 'rgba(0, 229, 255, 0.25)' : 'var(--glass-border)',
+              background: webSearchEnabled ? 'var(--accent-muted)' : 'var(--glass)',
+              color: webSearchEnabled ? 'var(--accent)' : 'var(--text-secondary)',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center',
-              transition: 'all var(--transition-fast)',
-              position: 'relative',
-            }}
-            onMouseEnter={(e) => {
-              if (!webSearchEnabled) {
-                e.currentTarget.style.color = 'var(--text-primary)';
-                e.currentTarget.style.background = 'var(--bg-hover)';
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (!webSearchEnabled) {
-                e.currentTarget.style.color = 'var(--text-tertiary)';
-                e.currentTarget.style.background = 'transparent';
-              } else {
-                e.currentTarget.style.background = 'rgba(59, 130, 246, 0.12)';
-              }
+              gap: '4px',
+              fontSize: '0.72rem',
+              fontWeight: 500,
+              transition: 'all 0.2s var(--ease-smooth)',
             }}
           >
-            <Globe size={18} />
-            {webSearchEnabled && (
-              <span
-                style={{
-                  position: 'absolute',
-                  top: '5px',
-                  right: '5px',
-                  width: '6px',
-                  height: '6px',
-                  borderRadius: '50%',
-                  background: '#3b82f6',
-                  boxShadow: '0 0 4px rgba(59, 130, 246, 0.6)',
-                }}
-              />
-            )}
+            <Globe size={11} />
+            <span>Search</span>
           </button>
+        </div>
+      </div>
 
-          {/* Attachment button */}
-          <button
-            onClick={() => {
-              const input = document.createElement('input');
-              input.type = 'file';
-              input.multiple = true;
-              input.accept = 'image/*,.pdf,.txt,.md,.csv,.json';
-              input.onchange = (e) => {
-                const target = e.target as HTMLInputElement;
-                if (target.files) {
-                  setFiles((prev) => [...prev, ...Array.from(target.files!)]);
-                }
-              };
-              input.click();
-            }}
-            title="Attach files"
-            style={{
-              padding: '8px',
-              borderRadius: 'var(--radius-sm)',
-              border: 'none',
-              background: 'transparent',
-              color: 'var(--text-tertiary)',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              transition: 'all var(--transition-fast)',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.color = 'var(--text-primary)';
-              e.currentTarget.style.background = 'var(--bg-hover)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = 'var(--text-tertiary)';
-              e.currentTarget.style.background = 'transparent';
-            }}
-          >
-            <Paperclip size={18} />
-          </button>
+      {/* Input container — Glass Capsule */}
+      <div
+        {...getRootProps()}
+        className="glass-input"
+        style={{
+          position: 'relative',
+          borderRadius: '32px',
+          padding: '6px 6px 6px 14px',
+          display: 'flex',
+          alignItems: 'center',
+          boxShadow: 'var(--shadow-md)',
+          borderWidth: '1px',
+        }}
+      >
+        <input {...getInputProps()} />
 
-          {/* Textarea */}
-          <textarea
-            ref={textareaRef}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Message AUI…"
-            rows={1}
-            style={{
-              flex: 1,
-              border: 'none',
-              background: 'transparent',
-              color: 'var(--text-primary)',
-              fontSize: '0.9375rem',
-              fontFamily: 'inherit',
-              lineHeight: 1.5,
-              padding: '8px 4px',
-              resize: 'none',
-              outline: 'none',
-              maxHeight: '200px',
-              overflowY: 'auto',
-            }}
-          />
+        {/* Left Actions: Attachment */}
+        <button
+          onClick={() => {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.multiple = true;
+            input.accept = 'image/*,.pdf,.txt,.md,.csv,.json';
+            input.onchange = (e) => {
+              const target = e.target as HTMLInputElement;
+              if (target.files) {
+                setFiles((prev) => [...prev, ...Array.from(target.files!)]);
+              }
+            };
+            input.click();
+          }}
+          title="Attach files"
+          style={{
+            padding: '8px',
+            borderRadius: 'var(--radius-full)',
+            border: 'none',
+            background: 'transparent',
+            color: 'var(--text-secondary)',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: 'all 0.2s var(--ease-smooth)',
+            flexShrink: 0,
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.color = 'var(--text-primary)';
+            e.currentTarget.style.background = 'var(--glass-hover)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.color = 'var(--text-secondary)';
+            e.currentTarget.style.background = 'transparent';
+          }}
+        >
+          <Paperclip size={16} />
+        </button>
 
-          {/* Voice button */}
+        {/* Textarea */}
+        <textarea
+          ref={textareaRef}
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder="Message AUI…"
+          rows={1}
+          style={{
+            flex: 1,
+            border: 'none',
+            background: 'transparent',
+            color: 'var(--text-primary)',
+            fontSize: '0.875rem',
+            fontFamily: 'inherit',
+            lineHeight: 1.5,
+            padding: '8px 10px',
+            resize: 'none',
+            outline: 'none',
+            maxHeight: '140px',
+            overflowY: 'auto',
+          }}
+        />
+
+        {/* Right Actions: Voice + Send */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
           <button
             onClick={toggleVoice}
             title={isListening ? 'Stop listening' : 'Voice input'}
             style={{
               padding: '8px',
-              borderRadius: 'var(--radius-sm)',
+              borderRadius: 'var(--radius-full)',
               border: 'none',
-              background: isListening ? 'rgba(239, 68, 68, 0.1)' : 'transparent',
-              color: isListening ? '#ef4444' : 'var(--text-tertiary)',
+              background: isListening ? 'rgba(239, 68, 68, 0.12)' : 'transparent',
+              color: isListening ? 'var(--danger)' : 'var(--text-secondary)',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              transition: 'all var(--transition-fast)',
+              transition: 'all 0.2s var(--ease-smooth)',
             }}
             onMouseEnter={(e) => {
               if (!isListening) {
                 e.currentTarget.style.color = 'var(--text-primary)';
-                e.currentTarget.style.background = 'var(--bg-hover)';
+                e.currentTarget.style.background = 'var(--glass-hover)';
               }
             }}
             onMouseLeave={(e) => {
               if (!isListening) {
-                e.currentTarget.style.color = 'var(--text-tertiary)';
+                e.currentTarget.style.color = 'var(--text-secondary)';
                 e.currentTarget.style.background = 'transparent';
               }
             }}
           >
-            {isListening ? <MicOff size={18} /> : <Mic size={18} />}
+            <Mic size={15} />
           </button>
 
-          {/* Send / Stop button */}
           {isStreaming ? (
             <button
               onClick={stopStreaming}
               title="Stop generating"
               style={{
-                padding: '8px',
-                borderRadius: 'var(--radius-sm)',
+                width: '36px',
+                height: '36px',
+                borderRadius: '50%',
                 border: 'none',
                 background: 'var(--bg-hover)',
                 color: 'var(--text-primary)',
@@ -528,10 +482,10 @@ export default function InputArea({ onSubmit }: InputAreaProps) {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                transition: 'all var(--transition-fast)',
+                transition: 'all 0.2s var(--ease-smooth)',
               }}
             >
-              <Square size={16} fill="currentColor" />
+              <Square size={13} fill="currentColor" />
             </button>
           ) : (
             <button
@@ -539,13 +493,14 @@ export default function InputArea({ onSubmit }: InputAreaProps) {
               disabled={!input.trim() && files.length === 0}
               title="Send message"
               style={{
-                padding: '8px',
-                borderRadius: 'var(--radius-sm)',
+                width: '36px',
+                height: '36px',
+                borderRadius: '50%',
                 border: 'none',
                 background:
                   input.trim() || files.length > 0
-                    ? 'var(--brand-primary)'
-                    : 'var(--bg-hover)',
+                    ? 'linear-gradient(135deg, var(--brand), var(--brand-hover))'
+                    : 'var(--glass)',
                 color:
                   input.trim() || files.length > 0
                     ? 'white'
@@ -554,25 +509,27 @@ export default function InputArea({ onSubmit }: InputAreaProps) {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                transition: 'all var(--transition-fast)',
+                transition: 'all 0.2s var(--ease-smooth)',
+                boxShadow: input.trim() || files.length > 0 ? '0 4px 12px rgba(108, 99, 255, 0.3)' : 'none',
               }}
             >
-              <ArrowUp size={18} />
+              <ArrowUp size={16} strokeWidth={2.5} />
             </button>
           )}
         </div>
       </div>
 
-      {/* Hint text */}
+      {/* Info notice */}
       <div
         style={{
           textAlign: 'center',
-          fontSize: '0.6875rem',
+          fontSize: '0.65rem',
           color: 'var(--text-tertiary)',
-          marginTop: '8px',
+          marginTop: '6px',
+          letterSpacing: '0.01em',
         }}
       >
-        AUI can make mistakes. Verify important information.
+        AUI 3.0 Agent System. Information is processed locally.
       </div>
     </div>
   );
@@ -585,3 +542,4 @@ declare global {
     webkitSpeechRecognition: any;
   }
 }
+

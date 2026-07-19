@@ -10,19 +10,28 @@ import {
   Pencil,
   ChevronDown,
   ChevronRight,
-  FolderOpen,
   Settings,
   LogOut,
   X,
-  Menu,
   LogIn,
+  Home,
+  LayoutDashboard,
+  Brain,
+  Compass,
+  FolderGit2,
+  Database,
+  Cpu,
 } from 'lucide-react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useChatStore } from '@/store/chat-store';
 import { useUIStore } from '@/store/ui-store';
-import { truncate, formatDate } from '@/lib/utils';
+import { useMemoryStore } from '@/store/memory-store';
+import { truncate } from '@/lib/utils';
 import type { ConversationListItem } from '@/types';
 
 export default function Sidebar() {
+  const pathname = usePathname();
   const {
     conversations,
     activeConversationId,
@@ -65,8 +74,6 @@ export default function Sidebar() {
   today.setHours(0, 0, 0, 0);
   const yesterday = new Date(today);
   yesterday.setDate(yesterday.getDate() - 1);
-  const weekAgo = new Date(today);
-  weekAgo.setDate(weekAgo.getDate() - 7);
 
   const todayChats = unpinnedConversations.filter(
     (c) => new Date(c.updatedAt) >= today,
@@ -93,6 +100,12 @@ export default function Sidebar() {
     [editTitle, renameConversation],
   );
 
+  // Primary OS Tools
+  const primaryTools = [
+    { name: 'Workspace', icon: <Home size={16} />, href: '/', active: pathname === '/' },
+    { name: 'Dashboard', icon: <LayoutDashboard size={16} />, href: '/dashboard', active: pathname === '/dashboard' },
+  ];
+
   const ConversationItem = ({ conv }: { conv: ConversationListItem }) => {
     const isActive = conv.id === activeConversationId;
     const isEditing = editingId === conv.id;
@@ -111,26 +124,26 @@ export default function Sidebar() {
             display: 'flex',
             alignItems: 'center',
             width: '100%',
-            padding: '10px 12px',
-            borderRadius: 'var(--radius-sm)',
+            padding: '8px 10px',
+            borderRadius: 'var(--radius-md)',
             border: 'none',
-            background: isActive ? 'var(--bg-hover)' : 'transparent',
+            background: isActive ? 'var(--glass-hover)' : 'transparent',
             color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)',
             cursor: 'pointer',
             textAlign: 'left',
-            fontSize: '0.875rem',
-            transition: 'all var(--transition-fast)',
+            fontSize: '0.8125rem',
+            transition: 'all 0.2s var(--ease-smooth)',
             gap: '8px',
           }}
           onMouseEnter={(e) => {
-            if (!isActive) e.currentTarget.style.background = 'var(--bg-hover)';
+            if (!isActive) e.currentTarget.style.background = 'var(--glass)';
           }}
           onMouseLeave={(e) => {
             if (!isActive) e.currentTarget.style.background = 'transparent';
           }}
         >
           {conv.pinned && (
-            <Pin size={12} style={{ color: 'var(--brand-primary)', flexShrink: 0 }} />
+            <Pin size={11} style={{ color: 'var(--brand)', flexShrink: 0 }} />
           )}
 
           {isEditing ? (
@@ -145,12 +158,12 @@ export default function Sidebar() {
               }}
               style={{
                 flex: 1,
-                background: 'var(--bg-input)',
-                border: '1px solid var(--border-focus)',
+                background: 'var(--bg-elevated)',
+                border: '1px solid var(--brand)',
                 borderRadius: '4px',
                 padding: '2px 6px',
                 color: 'var(--text-primary)',
-                fontSize: '0.875rem',
+                fontSize: '0.8125rem',
                 outline: 'none',
               }}
               onClick={(e) => e.stopPropagation()}
@@ -161,19 +174,19 @@ export default function Sidebar() {
             </span>
           )}
 
-          {/* Action buttons – visible on hover */}
+          {/* Actions */}
           {!isEditing && (
             <div
               style={{
                 display: 'flex',
                 gap: '2px',
                 opacity: 0,
-                transition: 'opacity var(--transition-fast)',
+                transition: 'opacity 0.2s var(--ease-smooth)',
               }}
               className="sidebar-item-actions"
             >
               <ActionBtn
-                icon={<Pencil size={13} />}
+                icon={<Pencil size={11} />}
                 onClick={(e) => {
                   e.stopPropagation();
                   setEditingId(conv.id);
@@ -181,14 +194,14 @@ export default function Sidebar() {
                 }}
               />
               <ActionBtn
-                icon={<Pin size={13} />}
+                icon={<Pin size={11} />}
                 onClick={(e) => {
                   e.stopPropagation();
                   pinConversation(conv.id, !conv.pinned);
                 }}
               />
               <ActionBtn
-                icon={<Trash2 size={13} />}
+                icon={<Trash2 size={11} />}
                 onClick={(e) => {
                   e.stopPropagation();
                   deleteConversation(conv.id);
@@ -218,39 +231,33 @@ export default function Sidebar() {
     count: number;
   }) => {
     if (count === 0) return null;
+    const expanded = expandedSections[sectionKey] !== false;
+
     return (
-      <button
+      <div
         onClick={() => toggleSection(sectionKey)}
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '6px',
-          padding: '6px 12px',
-          width: '100%',
-          border: 'none',
-          background: 'transparent',
+          justifyContent: 'space-between',
+          padding: '6px 8px',
           color: 'var(--text-tertiary)',
-          fontSize: '0.75rem',
-          fontWeight: 600,
-          textTransform: 'uppercase',
-          letterSpacing: '0.05em',
           cursor: 'pointer',
+          userSelect: 'none',
+          marginTop: '8px',
         }}
       >
-        {expandedSections[sectionKey] ? (
-          <ChevronDown size={12} />
-        ) : (
-          <ChevronRight size={12} />
-        )}
-        {label}
-        <span style={{ marginLeft: 'auto', opacity: 0.6 }}>{count}</span>
-      </button>
+        <span style={{ fontSize: '0.65rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+          {label} ({count})
+        </span>
+        {expanded ? <ChevronDown size={10} /> : <ChevronRight size={10} />}
+      </div>
     );
   };
 
   return (
     <>
-      {/* Mobile overlay */}
+      {/* Mobile backdrop */}
       <AnimatePresence>
         {isMobile && sidebarOpen && (
           <motion.div
@@ -263,6 +270,7 @@ export default function Sidebar() {
               inset: 0,
               background: 'var(--bg-overlay)',
               zIndex: 40,
+              backdropFilter: 'blur(4px)',
             }}
           />
         )}
@@ -271,97 +279,161 @@ export default function Sidebar() {
       <motion.aside
         initial={false}
         animate={{
-          width: sidebarOpen ? 260 : 0,
+          width: sidebarOpen ? 280 : 0,
           opacity: sidebarOpen ? 1 : 0,
         }}
-        transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+        transition={{ duration: 0.3, ease: 'easeInOut' }}
+        className="glass-sidebar"
         style={{
           position: isMobile ? 'fixed' : 'relative',
           left: 0,
           top: 0,
           bottom: 0,
+          margin: isMobile ? 0 : '8px 0 8px 8px',
           zIndex: isMobile ? 50 : 'auto',
-          background: 'var(--bg-sidebar)',
-          borderRight: '1px solid var(--border-primary)',
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
           flexShrink: 0,
         }}
       >
-        {/* Header */}
+        {/* Workspace Brand Header */}
         <div
           style={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            padding: '12px',
-            borderBottom: '1px solid var(--border-primary)',
+            padding: '16px',
+            borderBottom: '1px solid var(--glass-border)',
           }}
         >
-          <button
-            onClick={() => { newChat(); if (isMobile) toggleSidebar(); }}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              padding: '8px 14px',
-              borderRadius: 'var(--radius-sm)',
-              border: '1px solid var(--border-primary)',
-              background: 'transparent',
-              color: 'var(--text-primary)',
-              cursor: 'pointer',
-              fontSize: '0.875rem',
-              fontWeight: 500,
-              transition: 'all var(--transition-fast)',
-              flex: 1,
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'var(--bg-hover)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'transparent';
-            }}
-          >
-            <MessageSquarePlus size={16} />
-            New Chat
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div
+              style={{
+                width: 26,
+                height: 26,
+                borderRadius: '6px',
+                background: 'linear-gradient(135deg, var(--brand), var(--accent))',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Cpu size={12} color="white" />
+            </div>
+            <span style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--text-primary)', letterSpacing: '-0.01em' }}>
+              AUI Agent OS
+            </span>
+          </div>
 
           {isMobile && (
             <button
               onClick={toggleSidebar}
               style={{
-                padding: '6px',
+                padding: '4px',
                 background: 'transparent',
                 border: 'none',
-                borderRadius: 'var(--radius-sm)',
                 color: 'var(--text-secondary)',
                 cursor: 'pointer',
-                marginLeft: '8px',
               }}
             >
-              <X size={18} />
+              <X size={16} />
             </button>
           )}
         </div>
 
+        {/* Primary Navigation OS Tools */}
+        <div style={{ padding: '12px 16px 6px 16px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          {primaryTools.map((t) => (
+            <Link key={t.name} href={t.href} passHref legacyBehavior>
+              <a
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  padding: '10px 12px',
+                  borderRadius: 'var(--radius-md)',
+                  background: t.active ? 'var(--brand-muted)' : 'transparent',
+                  color: t.active ? 'var(--brand)' : 'var(--text-secondary)',
+                  fontSize: '0.85rem',
+                  fontWeight: t.active ? 600 : 500,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s var(--ease-smooth)',
+                }}
+                onMouseEnter={(e) => {
+                  if (!t.active) {
+                    e.currentTarget.style.background = 'var(--glass)';
+                    e.currentTarget.style.color = 'var(--text-primary)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!t.active) {
+                    e.currentTarget.style.background = 'transparent';
+                    e.currentTarget.style.color = 'var(--text-secondary)';
+                  }
+                }}
+              >
+                {t.icon}
+                <span>{t.name}</span>
+              </a>
+            </Link>
+          ))}
+        </div>
+
+        {/* Action Button: New Chat */}
+        <div style={{ padding: '6px 16px 10px 16px' }}>
+          <button
+            onClick={() => {
+              newChat();
+              if (isMobile) toggleSidebar();
+            }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+              padding: '10px',
+              borderRadius: 'var(--radius-md)',
+              border: '1px solid var(--glass-border)',
+              background: 'var(--glass)',
+              color: 'var(--text-primary)',
+              cursor: 'pointer',
+              fontSize: '0.85rem',
+              fontWeight: 600,
+              width: '100%',
+              transition: 'all 0.2s var(--ease-smooth)',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'var(--glass-hover)';
+              e.currentTarget.style.borderColor = 'var(--glass-border-hover)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'var(--glass)';
+              e.currentTarget.style.borderColor = 'var(--glass-border)';
+            }}
+          >
+            <MessageSquarePlus size={15} />
+            <span>New Session</span>
+          </button>
+        </div>
+
         {/* Search */}
-        <div style={{ padding: '8px 12px' }}>
+        <div style={{ padding: '0 16px 8px 16px' }}>
           <div
             style={{
               display: 'flex',
               alignItems: 'center',
               gap: '8px',
-              padding: '8px 12px',
-              borderRadius: 'var(--radius-sm)',
-              background: 'var(--bg-input)',
-              border: '1px solid var(--border-primary)',
+              padding: '6px 12px',
+              borderRadius: 'var(--radius-md)',
+              background: 'rgba(255, 255, 255, 0.02)',
+              border: '1px solid var(--glass-border)',
             }}
           >
-            <Search size={14} style={{ color: 'var(--text-tertiary)', flexShrink: 0 }} />
+            <Search size={12} style={{ color: 'var(--text-tertiary)', flexShrink: 0 }} />
             <input
               type="text"
-              placeholder="Search chats…"
+              placeholder="Filter sessions…"
               value={sidebarSearchQuery}
               onChange={(e) => setSidebarSearch(e.target.value)}
               style={{
@@ -369,7 +441,7 @@ export default function Sidebar() {
                 border: 'none',
                 background: 'transparent',
                 color: 'var(--text-primary)',
-                fontSize: '0.8125rem',
+                fontSize: '0.78rem',
                 outline: 'none',
               }}
             />
@@ -379,12 +451,12 @@ export default function Sidebar() {
                 style={{
                   background: 'transparent',
                   border: 'none',
-                  color: 'var(--text-tertiary)',
+                  color: 'var(--text-secondary)',
                   cursor: 'pointer',
                   padding: '2px',
                 }}
               >
-                <X size={12} />
+                <X size={10} />
               </button>
             )}
           </div>
@@ -395,7 +467,8 @@ export default function Sidebar() {
           style={{
             flex: 1,
             overflowY: 'auto',
-            padding: '4px 8px',
+            padding: '4px 16px',
+            borderTop: '1px solid var(--glass-border)',
           }}
         >
           {/* Pinned */}
@@ -450,7 +523,7 @@ export default function Sidebar() {
                 textAlign: 'center',
                 padding: '2rem 1rem',
                 color: 'var(--text-tertiary)',
-                fontSize: '0.875rem',
+                fontSize: '0.78rem',
               }}
             >
               {sidebarSearchQuery ? 'No matching chats' : 'No conversations yet'}
@@ -461,58 +534,27 @@ export default function Sidebar() {
         {/* Footer */}
         <div
           style={{
-            padding: '12px',
-            borderTop: '1px solid var(--border-primary)',
+            padding: '12px 16px',
+            borderTop: '1px solid var(--glass-border)',
             display: 'flex',
             flexDirection: 'column',
-            gap: '4px',
+            gap: '6px',
           }}
         >
-          <button
-            onClick={() => setSettingsOpen(true)}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '10px',
-              padding: '10px 12px',
-              borderRadius: 'var(--radius-sm)',
-              border: 'none',
-              background: 'transparent',
-              color: 'var(--text-secondary)',
-              cursor: 'pointer',
-              fontSize: '0.875rem',
-              width: '100%',
-              textAlign: 'left',
-              transition: 'all var(--transition-fast)',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'var(--bg-hover)';
-              e.currentTarget.style.color = 'var(--text-primary)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'transparent';
-              e.currentTarget.style.color = 'var(--text-secondary)';
-            }}
-          >
-            <Settings size={16} />
-            Settings
-          </button>
-
           {user ? (
             <div
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 gap: '10px',
-                padding: '10px 12px',
               }}
             >
               <div
                 style={{
                   width: 32,
                   height: 32,
-                  borderRadius: 'var(--radius-full)',
-                  background: 'linear-gradient(135deg, var(--brand-primary), var(--brand-secondary))',
+                  borderRadius: '50%',
+                  background: 'linear-gradient(135deg, var(--brand), var(--accent))',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -520,6 +562,7 @@ export default function Sidebar() {
                   fontSize: '0.8125rem',
                   fontWeight: 600,
                   flexShrink: 0,
+                  boxShadow: 'var(--shadow-sm)',
                 }}
               >
                 {user.name.charAt(0).toUpperCase()}
@@ -527,8 +570,8 @@ export default function Sidebar() {
               <div style={{ flex: 1, overflow: 'hidden' }}>
                 <div
                   style={{
-                    fontSize: '0.875rem',
-                    fontWeight: 500,
+                    fontSize: '0.8125rem',
+                    fontWeight: 600,
                     color: 'var(--text-primary)',
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
@@ -539,7 +582,7 @@ export default function Sidebar() {
                 </div>
                 <div
                   style={{
-                    fontSize: '0.75rem',
+                    fontSize: '0.6875rem',
                     color: 'var(--text-tertiary)',
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
@@ -553,15 +596,19 @@ export default function Sidebar() {
                 onClick={logout}
                 title="Log out"
                 style={{
-                  padding: '4px',
+                  padding: '6px',
                   background: 'transparent',
                   border: 'none',
                   color: 'var(--text-tertiary)',
                   cursor: 'pointer',
                   borderRadius: 'var(--radius-sm)',
+                  display: 'flex',
+                  alignItems: 'center',
                 }}
+                onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--danger)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-tertiary)'; }}
               >
-                <LogOut size={14} />
+                <LogOut size={13} />
               </button>
             </div>
           ) : (
@@ -573,25 +620,25 @@ export default function Sidebar() {
                 justifyContent: 'center',
                 gap: '8px',
                 padding: '10px 12px',
-                borderRadius: 'var(--radius-sm)',
-                border: '1px solid var(--border-primary)',
-                background: 'var(--bg-tertiary)',
+                borderRadius: 'var(--radius-md)',
+                border: '1px solid var(--glass-border)',
+                background: 'var(--glass)',
                 color: 'var(--text-primary)',
                 cursor: 'pointer',
-                fontSize: '0.875rem',
-                fontWeight: 500,
+                fontSize: '0.8125rem',
+                fontWeight: 600,
                 width: '100%',
-                transition: 'all var(--transition-fast)',
+                transition: 'all 0.2s var(--ease-smooth)',
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'var(--bg-hover)';
+                e.currentTarget.style.background = 'var(--glass-hover)';
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'var(--bg-tertiary)';
+                e.currentTarget.style.background = 'var(--glass)';
               }}
             >
-              <LogIn size={16} style={{ color: 'var(--brand-primary)' }} />
-              Sign In / Sign Up
+              <LogIn size={15} style={{ color: 'var(--brand)' }} />
+              <span>Sign In / Sign Up</span>
             </button>
           )}
         </div>
@@ -622,15 +669,17 @@ function ActionBtn({
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        transition: 'all var(--transition-fast)',
+        transition: 'all 0.2s var(--ease-smooth)',
       }}
       onMouseEnter={(e) => {
         e.currentTarget.style.background = danger
-          ? 'rgba(239, 68, 68, 0.1)'
-          : 'var(--bg-hover)';
+          ? 'rgba(239, 68, 68, 0.12)'
+          : 'var(--glass)';
+        if (!danger) e.currentTarget.style.color = 'var(--text-primary)';
       }}
       onMouseLeave={(e) => {
         e.currentTarget.style.background = 'transparent';
+        e.currentTarget.style.color = danger ? '#ef4444' : 'var(--text-tertiary)';
       }}
     >
       {icon}

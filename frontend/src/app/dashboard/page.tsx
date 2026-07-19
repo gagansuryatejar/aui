@@ -126,48 +126,49 @@ export default function DashboardPage() {
   return (
     <div style={{
       minHeight: '100vh',
-      background: 'radial-gradient(ellipse at top, #0f172a, #020617)',
-      color: '#f8fafc',
-      fontFamily: 'Inter, system-ui, sans-serif',
+      background: 'transparent',
+      color: 'var(--text-primary)',
       padding: '24px',
+      position: 'relative',
+      zIndex: 1,
     }}>
       {/* Top Header */}
       <header style={{
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+        borderBottom: '1px solid var(--glass-border)',
         paddingBottom: '16px',
         marginBottom: '28px',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <div style={{
-            background: 'linear-gradient(135deg, #6366f1, #06b6d4)',
+            background: 'linear-gradient(135deg, var(--brand), var(--accent))',
             padding: '10px',
             borderRadius: '12px',
-            boxShadow: '0 0 20px rgba(99, 102, 241, 0.3)',
+            boxShadow: 'var(--shadow-glow)',
           }}>
             <LayoutDashboard size={24} style={{ color: 'white' }} />
           </div>
           <div>
-            <h1 style={{ fontSize: '1.4rem', fontWeight: 700, margin: 0, letterSpacing: '-0.02em' }}>AUI 3.0 Agent OS</h1>
-            <span style={{ fontSize: '0.75rem', color: '#64748b' }}>Unified Operational Dashboard & Mission Control</span>
+            <h1 style={{ fontSize: '1.4rem', fontWeight: 800, margin: 0, letterSpacing: '-0.02em', color: 'var(--text-primary)' }}>AUI 3.0 Agent OS</h1>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>Unified Operational Dashboard & Mission Control</span>
           </div>
         </div>
 
         <Link href="/" style={{
           padding: '8px 16px',
           borderRadius: '20px',
-          background: 'rgba(255, 255, 255, 0.05)',
-          border: '1px solid rgba(255, 255, 255, 0.08)',
-          color: '#f1f5f9',
+          background: 'var(--glass)',
+          border: '1px solid var(--glass-border)',
+          color: 'var(--text-primary)',
           fontSize: '0.8125rem',
-          fontWeight: 500,
+          fontWeight: 600,
           textDecoration: 'none',
-          transition: 'all 0.2s',
+          transition: 'all 0.2s var(--ease-smooth)',
         }}
-        onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
-        onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'}
+        onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--glass-hover)'; e.currentTarget.style.borderColor = 'var(--glass-border-hover)'; }}
+        onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--glass)'; e.currentTarget.style.borderColor = 'var(--glass-border)'; }}
         >
           ← Go to Chat Workspace
         </Link>
