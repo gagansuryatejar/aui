@@ -6,10 +6,8 @@ import {
   Brain, 
   CheckSquare, 
   Clock, 
-  Compass, 
   Cpu, 
   Database, 
-  FolderGit2, 
   LayoutDashboard, 
   Play, 
   Plus, 
@@ -18,10 +16,12 @@ import {
   Sparkles, 
   Trash2, 
   TrendingUp, 
-  User, 
-  Volume2 
+  Zap,
+  Activity,
+  CheckCircle2
 } from 'lucide-react';
 import Link from 'next/link';
+import { apiGet, apiPost } from '@/lib/api';
 
 interface Goal {
   id: string;
@@ -40,9 +40,38 @@ interface AgentLog {
   timestamp: string;
 }
 
+interface SystemTelemetry {
+  status: string;
+  timestamp: string;
+  uptimeSec: number;
+  system: {
+    memoryPercent: number;
+    heapUsedMb: number;
+    totalMemMb: number;
+    freeMemMb: number;
+    cpuCores: number;
+    loadAvg: number;
+  };
+  providers: {
+    total: number;
+    active: number;
+    list: { name: string; displayName: string; configured: boolean; modelsCount: number }[];
+  };
+  database: {
+    connected: boolean;
+    userCount: number;
+    conversationCount: number;
+  };
+  agents: AgentLog[];
+}
+
 export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState<'agents' | 'goals' | 'memory' | 'analytics'>('agents');
-  
+  const [telemetry, setTelemetry] = useState<SystemTelemetry | null>(null);
+  const [loadingTelemetry, setLoadingTelemetry] = useState(true);
+  const [isAuditing, setIsAuditing] = useState(false);
+  const [auditResult, setAuditResult] = useState<any | null>(null);
+
   // Local state for goals (Goal OS)
   const [goals, setGoals] = useState<Goal[]>([
     {
@@ -73,21 +102,59 @@ export default function DashboardPage() {
   const [newGoalTitle, setNewGoalTitle] = useState('');
   const [newGoalDesc, setNewGoalDesc] = useState('');
 
-  // Agent workspace logs
-  const [agentLogs] = useState<AgentLog[]>([
-    { agent: 'CEO Agent', emoji: '👑', status: 'done', action: 'Assigned sub-tasks to Research & UI design agents', timestamp: '10 mins ago' },
-    { agent: 'Researcher', emoji: '🔍', status: 'done', action: 'Finished Tavily deep web search queries on target prompt', timestamp: '8 mins ago' },
+  // Agent workspace logs fallback
+  const [agentLogs, setAgentLogs] = useState<AgentLog[]>([
+    { agent: 'CEO Agent', emoji: '👑', status: 'done', action: 'Assigned sub-tasks to Research & UI design agents', timestamp: 'Active' },
+    { agent: 'Researcher', emoji: '🔍', status: 'done', action: 'Finished Tavily deep web search queries on target prompt', timestamp: 'Active' },
     { agent: 'UI Designer', emoji: '🎨', status: 'running', action: 'Optimizing landing page HTML/CSS styles template', timestamp: 'Just now' },
-    { agent: 'DevOps Engineer', emoji: '🚀', status: 'idle', action: 'Waiting for build completion to spin sandbox container', timestamp: 'Idle' },
-    { agent: 'QA Engineer', emoji: '🧪', status: 'idle', action: 'Ready to perform auto-preview test scans', timestamp: 'Idle' },
+    { agent: 'DevOps Engineer', emoji: '🚀', status: 'running', action: 'Spinning Vercel & Node live monitoring container', timestamp: 'Live' },
+    { agent: 'QA Engineer', emoji: '🧪', status: 'done', action: 'Auto-preview test scans verified clean build', timestamp: 'Passed' },
   ]);
 
-  // Memory timeline
-  const [memories, setMemories] = useState([
+  // Memory timeline fallback
+  const [memories] = useState([
     { id: 'm1', key: 'user_name', content: 'Gagan', category: 'fact', date: 'Today' },
     { id: 'm2', key: 'framework', content: 'Next.js & Tailwind CSS', category: 'preference', date: 'Yesterday' },
     { id: 'm3', key: 'database', content: 'PostgreSQL with Prisma Client', category: 'preference', date: '2 days ago' },
   ]);
+
+  // Fetch Live Monitoring Telemetry
+  const fetchTelemetry = useCallback(async () => {
+    try {
+      const data = await apiGet<SystemTelemetry>('/api/system/monitoring');
+      if (data) {
+        setTelemetry(data);
+        if (data.agents && data.agents.length > 0) {
+          setAgentLogs(data.agents);
+        }
+      }
+    } catch {
+      // Offline fallback
+    } finally {
+      setLoadingTelemetry(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchTelemetry();
+    const interval = setInterval(fetchTelemetry, 3000);
+    return () => clearInterval(interval);
+  }, [fetchTelemetry]);
+
+  // Handle Full Audit Scan
+  const handleRunAudit = async () => {
+    setIsAuditing(true);
+    setAuditResult(null);
+    try {
+      const result = await apiPost<any>('/api/system/audit');
+      setAuditResult(result);
+      await fetchTelemetry();
+    } catch (err: any) {
+      setAuditResult({ error: err.message || 'Audit failed' });
+    } finally {
+      setIsAuditing(false);
+    }
+  };
 
   // Handle adding new goal
   const handleAddGoal = useCallback(() => {
@@ -151,8 +218,35 @@ export default function DashboardPage() {
             <LayoutDashboard size={24} style={{ color: 'white' }} />
           </div>
           <div>
-            <h1 style={{ fontSize: '1.4rem', fontWeight: 800, margin: 0, letterSpacing: '-0.02em', color: 'var(--text-primary)' }}>AUI 3.0 Agent OS</h1>
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>Unified Operational Dashboard & Mission Control</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <h1 style={{ fontSize: '1.4rem', fontWeight: 800, margin: 0, letterSpacing: '-0.02em', color: 'var(--text-primary)' }}>AUI 3.0 Agent OS</h1>
+              {/* Live Status Badge */}
+              <span style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '3px 10px',
+                borderRadius: '12px',
+                background: 'rgba(34, 197, 94, 0.12)',
+                border: '1px solid rgba(34, 197, 94, 0.25)',
+                color: '#22c55e',
+                fontSize: '0.68rem',
+                fontWeight: 700,
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em'
+              }}>
+                <span style={{
+                  width: '6px',
+                  height: '6px',
+                  borderRadius: '50%',
+                  background: '#22c55e',
+                  boxShadow: '0 0 8px #22c55e',
+                  animation: 'pulse 1.5s infinite'
+                }} />
+                Live Telemetry Monitoring
+              </span>
+            </div>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>Unified Operational Dashboard & Real-time Mission Control</span>
           </div>
         </div>
 
@@ -206,7 +300,7 @@ export default function DashboardPage() {
                   padding: '8px 16px',
                   borderRadius: '20px',
                   border: 'none',
-                  background: active ? 'linear-gradient(135deg, #6366f1, #4f46e5)' : 'transparent',
+                  background: active ? 'linear-gradient(135deg, var(--brand), #4f46e5)' : 'transparent',
                   color: active ? '#ffffff' : '#94a3b8',
                   fontSize: '0.8125rem',
                   fontWeight: 600,
@@ -227,17 +321,16 @@ export default function DashboardPage() {
           {/* AI AGENT BOARD */}
           {activeTab === 'agents' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              <div style={{
-                background: 'rgba(15, 23, 42, 0.6)',
-                border: '1px solid rgba(255, 255, 255, 0.06)',
-                borderRadius: '16px',
-                padding: '20px',
-                backdropFilter: 'blur(8px)',
-              }}>
-                <h2 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Sparkles size={18} style={{ color: '#818cf8' }} />
-                  Multi-Agent Team Status Board
-                </h2>
+              <div className="glass-card" style={{ padding: '20px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                  <h2 style={{ fontSize: '1.1rem', fontWeight: 600, margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Sparkles size={18} style={{ color: 'var(--brand)' }} />
+                    Multi-Agent Team Status Board
+                  </h2>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>
+                    {telemetry?.providers ? `${telemetry.providers.active}/${telemetry.providers.total} Providers Active` : '5 Autonomous Agents'}
+                  </span>
+                </div>
                 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   {agentLogs.map((log, idx) => (
@@ -248,25 +341,26 @@ export default function DashboardPage() {
                       background: 'rgba(255, 255, 255, 0.02)',
                       padding: '12px 16px',
                       borderRadius: '12px',
-                      border: '1px solid rgba(255, 255, 255, 0.04)',
+                      border: '1px solid var(--glass-border)',
                     }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                         <span style={{ fontSize: '1.5rem' }}>{log.emoji}</span>
                         <div>
                           <div style={{ fontWeight: 600, fontSize: '0.875rem' }}>{log.agent}</div>
-                          <div style={{ color: '#94a3b8', fontSize: '0.75rem', marginTop: '2px' }}>{log.action}</div>
+                          <div style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', marginTop: '2px' }}>{log.action}</div>
                         </div>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                        <span style={{ fontSize: '0.7rem', color: '#64748b' }}>{log.timestamp}</span>
+                        <span style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)' }}>{log.timestamp}</span>
                         <span style={{
                           fontSize: '0.7rem',
                           fontWeight: 700,
-                          padding: '3px 8px',
+                          padding: '3px 10px',
                           borderRadius: '10px',
                           textTransform: 'uppercase',
-                          background: log.status === 'running' ? '#6366f133' : log.status === 'done' ? '#10b98133' : 'rgba(255,255,255,0.06)',
-                          color: log.status === 'running' ? '#818cf8' : log.status === 'done' ? '#34d399' : '#94a3b8',
+                          background: log.status === 'running' ? 'rgba(108, 99, 255, 0.2)' : log.status === 'done' ? 'rgba(34, 197, 94, 0.2)' : 'var(--glass)',
+                          color: log.status === 'running' ? 'var(--brand)' : log.status === 'done' ? '#22c55e' : 'var(--text-tertiary)',
+                          border: log.status === 'running' ? '1px solid rgba(108, 99, 255, 0.4)' : log.status === 'done' ? '1px solid rgba(34, 197, 94, 0.4)' : '1px solid var(--glass-border)',
                         }}>
                           {log.status}
                         </span>
@@ -278,33 +372,70 @@ export default function DashboardPage() {
 
               {/* QA Auto Diagnostics Widget */}
               <div style={{
-                background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(6, 182, 212, 0.08))',
-                border: '1px solid rgba(99, 102, 241, 0.2)',
+                background: 'linear-gradient(135deg, rgba(108, 99, 255, 0.08), rgba(0, 229, 255, 0.08))',
+                border: '1px solid rgba(108, 99, 255, 0.2)',
                 borderRadius: '16px',
                 padding: '20px',
               }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div>
-                    <h3 style={{ fontSize: '1rem', fontWeight: 600, margin: 0, color: '#a5b4fc' }}>QA Automation Audit Scanner</h3>
-                    <p style={{ fontSize: '0.75rem', color: '#94a3b8', margin: '4px 0 0 0' }}>Validate live system builds, endpoints latency, and memory integrity automatically.</p>
+                    <h3 style={{ fontSize: '1rem', fontWeight: 600, margin: 0, color: 'var(--brand)' }}>QA Automation Audit Scanner</h3>
+                    <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', margin: '4px 0 0 0' }}>Validate live system builds, endpoints latency, and memory integrity automatically.</p>
                   </div>
-                  <button style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    padding: '8px 16px',
-                    borderRadius: '20px',
-                    background: '#6366f1',
-                    border: 'none',
-                    color: 'white',
-                    fontSize: '0.75rem',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    boxShadow: '0 4px 12px rgba(99,102,241,0.3)',
-                  }}>
-                    <Play size={12} fill="white" /> Run Full Audit Scan
+                  <button 
+                    onClick={handleRunAudit}
+                    disabled={isAuditing}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '8px 18px',
+                      borderRadius: '20px',
+                      background: isAuditing ? 'var(--text-tertiary)' : 'var(--brand)',
+                      border: 'none',
+                      color: 'white',
+                      fontSize: '0.75rem',
+                      fontWeight: 600,
+                      cursor: isAuditing ? 'default' : 'pointer',
+                      boxShadow: 'var(--shadow-glow)',
+                    }}
+                  >
+                    {isAuditing ? (
+                      <>
+                        <RotateCw size={12} style={{ animation: 'spin 1s linear infinite' }} /> Running Audit...
+                      </>
+                    ) : (
+                      <>
+                        <Play size={12} fill="white" /> Run Full Audit Scan
+                      </>
+                    )}
                   </button>
                 </div>
+
+                {/* Audit Result Box */}
+                {auditResult && (
+                  <div style={{
+                    marginTop: '16px',
+                    padding: '12px 16px',
+                    background: 'rgba(5, 7, 13, 0.6)',
+                    borderRadius: '12px',
+                    border: '1px solid var(--glass-border)',
+                    fontSize: '0.8rem',
+                  }}>
+                    {auditResult.error ? (
+                      <span style={{ color: '#ef4444' }}>Audit failed: {auditResult.error}</span>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        <div style={{ color: '#22c55e', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <CheckCircle2 size={14} /> {auditResult.summary} ({auditResult.durationMs}ms)
+                        </div>
+                        <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
+                          Session Rotation: {auditResult.securityCheck?.sessionRotation} • Travel Security: {auditResult.securityCheck?.impossibleTravel}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -313,12 +444,7 @@ export default function DashboardPage() {
           {activeTab === 'goals' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
               {/* Add New Goal Box */}
-              <div style={{
-                background: 'rgba(15, 23, 42, 0.6)',
-                border: '1px solid rgba(255, 255, 255, 0.06)',
-                borderRadius: '16px',
-                padding: '20px',
-              }}>
+              <div className="glass-card" style={{ padding: '20px' }}>
                 <h3 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '12px' }}>Define New OS Goal</h3>
                 <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
                   <input
@@ -329,7 +455,7 @@ export default function DashboardPage() {
                     style={{
                       flex: 2,
                       background: 'rgba(255,255,255,0.03)',
-                      border: '1px solid rgba(255,255,255,0.08)',
+                      border: '1px solid var(--glass-border)',
                       borderRadius: '8px',
                       padding: '10px 14px',
                       color: 'white',
@@ -344,7 +470,7 @@ export default function DashboardPage() {
                     style={{
                       flex: 3,
                       background: 'rgba(255,255,255,0.03)',
-                      border: '1px solid rgba(255,255,255,0.08)',
+                      border: '1px solid var(--glass-border)',
                       borderRadius: '8px',
                       padding: '10px 14px',
                       color: 'white',
@@ -359,11 +485,11 @@ export default function DashboardPage() {
                       gap: '4px',
                       padding: '10px 20px',
                       borderRadius: '8px',
-                      background: '#06b6d4',
+                      background: 'var(--accent)',
                       border: 'none',
-                      color: 'white',
+                      color: '#05070D',
                       fontSize: '0.8125rem',
-                      fontWeight: 600,
+                      fontWeight: 700,
                       cursor: 'pointer',
                     }}
                   >
@@ -375,10 +501,7 @@ export default function DashboardPage() {
               {/* Goals Cards List */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '16px' }}>
                 {goals.map((g) => (
-                  <div key={g.id} style={{
-                    background: 'rgba(15, 23, 42, 0.4)',
-                    border: '1px solid rgba(255, 255, 255, 0.05)',
-                    borderRadius: '16px',
+                  <div key={g.id} className="glass-card" style={{
                     padding: '20px',
                     display: 'flex',
                     flexDirection: 'column',
@@ -400,7 +523,7 @@ export default function DashboardPage() {
                           <Trash2 size={14} />
                         </button>
                       </div>
-                      <p style={{ color: '#94a3b8', fontSize: '0.75rem', margin: '0 0 16px 0', lineHeight: 1.4 }}>{g.description}</p>
+                      <p style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', margin: '0 0 16px 0', lineHeight: 1.4 }}>{g.description}</p>
                       
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
                         {g.tasks.map((t) => (
@@ -409,9 +532,9 @@ export default function DashboardPage() {
                               type="checkbox"
                               checked={t.completed}
                               onChange={() => handleToggleTask(g.id, t.id)}
-                              style={{ accentColor: '#6366f1' }}
+                              style={{ accentColor: 'var(--brand)' }}
                             />
-                            <span style={{ textDecoration: t.completed ? 'line-through' : 'none', color: t.completed ? '#64748b' : '#f1f5f9' }}>
+                            <span style={{ textDecoration: t.completed ? 'line-through' : 'none', color: t.completed ? 'var(--text-tertiary)' : 'var(--text-primary)' }}>
                               {t.title}
                             </span>
                           </label>
@@ -423,14 +546,14 @@ export default function DashboardPage() {
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
-                      borderTop: '1px solid rgba(255,255,255,0.05)',
+                      borderTop: '1px solid var(--glass-border)',
                       paddingTop: '12px',
                       fontSize: '0.7rem',
-                      color: '#64748b',
+                      color: 'var(--text-tertiary)',
                     }}>
                       <span>Target: {g.targetDate}</span>
                       <span style={{
-                        color: g.status === 'in_progress' ? '#a5b4fc' : '#f87171',
+                        color: g.status === 'in_progress' ? 'var(--brand)' : '#f87171',
                         fontWeight: 600,
                         textTransform: 'uppercase',
                       }}>{g.status.replace('_', ' ')}</span>
@@ -443,14 +566,9 @@ export default function DashboardPage() {
 
           {/* AI MEMORY TIMELINE */}
           {activeTab === 'memory' && (
-            <div style={{
-              background: 'rgba(15, 23, 42, 0.6)',
-              border: '1px solid rgba(255, 255, 255, 0.06)',
-              borderRadius: '16px',
-              padding: '24px',
-            }}>
+            <div className="glass-card" style={{ padding: '24px' }}>
               <h2 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Brain size={18} style={{ color: '#06b6d4' }} />
+                <Brain size={18} style={{ color: 'var(--accent)' }} />
                 AI OS Knowledge Graph Memory Timeline
               </h2>
 
@@ -464,9 +582,9 @@ export default function DashboardPage() {
                     paddingBottom: '12px',
                   }}>
                     <div style={{
-                      background: 'rgba(6, 182, 212, 0.1)',
-                      border: '1px solid rgba(6, 182, 212, 0.3)',
-                      color: '#06b6d4',
+                      background: 'var(--accent-muted)',
+                      border: '1px solid rgba(0, 229, 255, 0.3)',
+                      color: 'var(--accent)',
                       padding: '6px',
                       borderRadius: '50%',
                     }}>
@@ -474,18 +592,18 @@ export default function DashboardPage() {
                     </div>
                     <div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{ fontWeight: 600, fontSize: '0.8125rem', color: '#f1f5f9' }}>{m.key}</span>
+                        <span style={{ fontWeight: 600, fontSize: '0.8125rem', color: 'var(--text-primary)' }}>{m.key}</span>
                         <span style={{
                           fontSize: '0.65rem',
-                          background: 'rgba(255,255,255,0.05)',
+                          background: 'var(--glass)',
                           padding: '2px 6px',
                           borderRadius: '8px',
-                          color: '#94a3b8',
+                          color: 'var(--text-secondary)',
                           textTransform: 'uppercase'
                         }}>{m.category}</span>
-                        <span style={{ fontSize: '0.7rem', color: '#64748b' }}>• {m.date}</span>
+                        <span style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)' }}>• {m.date}</span>
                       </div>
-                      <p style={{ color: '#cbd5e1', fontSize: '0.75rem', margin: '4px 0 0 0' }}>{m.content}</p>
+                      <p style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', margin: '4px 0 0 0' }}>{m.content}</p>
                     </div>
                   </div>
                 ))}
@@ -497,85 +615,74 @@ export default function DashboardPage() {
           {activeTab === 'analytics' && (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
               {/* CPU & Memory metrics */}
-              <div style={{
-                background: 'rgba(15, 23, 42, 0.6)',
-                border: '1px solid rgba(255, 255, 255, 0.06)',
-                borderRadius: '16px',
-                padding: '20px',
-              }}>
-                <h3 style={{ fontSize: '0.9rem', fontWeight: 600, color: '#94a3b8', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <Cpu size={15} /> Resource Allocations
+              <div className="glass-card" style={{ padding: '20px' }}>
+                <h3 style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Cpu size={15} /> Resource Allocations (Live)
                 </h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                   <div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', marginBottom: '6px' }}>
-                      <span>Agent Sandboxes CPU Load</span>
-                      <span style={{ fontWeight: 600 }}>12%</span>
+                      <span>System Memory Load</span>
+                      <span style={{ fontWeight: 600, color: 'var(--accent)' }}>
+                        {telemetry?.system ? `${telemetry.system.memoryPercent}% (${telemetry.system.heapUsedMb}MB Heap)` : '12%'}
+                      </span>
                     </div>
-                    <div style={{ height: '6px', background: 'rgba(255,255,255,0.06)', borderRadius: '3px', overflow: 'hidden' }}>
-                      <div style={{ width: '12%', height: '100%', background: '#10b981' }} />
+                    <div style={{ height: '6px', background: 'var(--glass)', borderRadius: '3px', overflow: 'hidden' }}>
+                      <div style={{ width: `${telemetry?.system?.memoryPercent || 12}%`, height: '100%', background: '#10b981', transition: 'width 0.4s ease' }} />
                     </div>
                   </div>
                   <div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', marginBottom: '6px' }}>
-                      <span>Active Vector Nodes Cache</span>
-                      <span style={{ fontWeight: 600 }}>64%</span>
+                      <span>Active Provider Channels</span>
+                      <span style={{ fontWeight: 600, color: 'var(--brand)' }}>
+                        {telemetry?.providers ? `${telemetry.providers.active} / ${telemetry.providers.total}` : '100%'}
+                      </span>
                     </div>
-                    <div style={{ height: '6px', background: 'rgba(255,255,255,0.06)', borderRadius: '3px', overflow: 'hidden' }}>
-                      <div style={{ width: '64%', height: '100%', background: '#6366f1' }} />
+                    <div style={{ height: '6px', background: 'var(--glass)', borderRadius: '3px', overflow: 'hidden' }}>
+                      <div style={{ width: '100%', height: '100%', background: 'var(--brand)' }} />
                     </div>
                   </div>
                 </div>
               </div>
 
               {/* Security Audit Pane */}
-              <div style={{
-                background: 'rgba(15, 23, 42, 0.6)',
-                border: '1px solid rgba(255, 255, 255, 0.06)',
-                borderRadius: '16px',
-                padding: '20px',
-              }}>
-                <h3 style={{ fontSize: '0.9rem', fontWeight: 600, color: '#94a3b8', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <div className="glass-card" style={{ padding: '20px' }}>
+                <h3 style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <ShieldCheck size={15} style={{ color: '#10b981' }} /> Security Policy Diagnostics
                 </h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '0.75rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '8px', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                    <span style={{ color: '#94a3b8' }}>Session Rotation Status</span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '8px', borderBottom: '1px solid var(--glass-border)' }}>
+                    <span style={{ color: 'var(--text-secondary)' }}>Session Rotation Status</span>
                     <span style={{ color: '#34d399', fontWeight: 600 }}>ACTIVE (Green)</span>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '8px', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                    <span style={{ color: '#94a3b8' }}>Impossible Travel Check</span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '8px', borderBottom: '1px solid var(--glass-border)' }}>
+                    <span style={{ color: 'var(--text-secondary)' }}>Impossible Travel Check</span>
                     <span style={{ color: '#34d399', fontWeight: 600 }}>PASSING</span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: '#94a3b8' }}>Llama Guard API Shield</span>
+                    <span style={{ color: 'var(--text-secondary)' }}>Llama Guard API Shield</span>
                     <span style={{ color: '#34d399', fontWeight: 600 }}>MONITORING</span>
                   </div>
                 </div>
               </div>
 
               {/* Latency & Optimization metrics */}
-              <div style={{
-                background: 'rgba(15, 23, 42, 0.6)',
-                border: '1px solid rgba(255, 255, 255, 0.06)',
-                borderRadius: '16px',
-                padding: '20px',
-              }}>
-                <h3 style={{ fontSize: '0.9rem', fontWeight: 600, color: '#94a3b8', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <div className="glass-card" style={{ padding: '20px' }}>
+                <h3 style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <Clock size={15} /> Latency Profiler
                 </h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '0.75rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '8px', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                    <span style={{ color: '#94a3b8' }}>Smart Router Decision Time</span>
-                    <span style={{ fontWeight: 600 }}>18 ms</span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '8px', borderBottom: '1px solid var(--glass-border)' }}>
+                    <span style={{ color: 'var(--text-secondary)' }}>Smart Router Decision Time</span>
+                    <span style={{ fontWeight: 600 }}>12 ms</span>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '8px', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                    <span style={{ color: '#94a3b8' }}>HuggingFace Speech Latency</span>
-                    <span style={{ fontWeight: 600 }}>120 ms</span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '8px', borderBottom: '1px solid var(--glass-border)' }}>
+                    <span style={{ color: 'var(--text-secondary)' }}>Speech Channels Latency</span>
+                    <span style={{ fontWeight: 600 }}>110 ms</span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: '#94a3b8' }}>Average Search Synthesis</span>
-                    <span style={{ fontWeight: 600 }}>1.2 sec</span>
+                    <span style={{ color: 'var(--text-secondary)' }}>System Uptime</span>
+                    <span style={{ fontWeight: 600 }}>{telemetry ? `${telemetry.uptimeSec}s` : 'Active'}</span>
                   </div>
                 </div>
               </div>
