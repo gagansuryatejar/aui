@@ -170,226 +170,49 @@ export default function ChatArea() {
               </motion.p>
             </div>
 
-            {/* Bento Grid */}
-            <div
+            {/* Clean Quick Suggestion Cards */}
+            <motion.div
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
               style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(12, 1fr)',
-                gap: '16px',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+                gap: '12px',
                 width: '100%',
+                maxWidth: '44rem',
+                margin: '0 auto',
               }}
             >
-              {/* Goals OS Card (6 cols) */}
-              <div
-                className="glass-card border-glow"
-                style={{
-                  gridColumn: 'span 6',
-                  padding: '20px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '14px',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              {suggestions.map((s) => (
+                <button
+                  key={s.title}
+                  onClick={() => sendMessage(s.prompt)}
+                  className="glass-card border-glow hover-lift"
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '8px',
+                    padding: '16px 18px',
+                    borderRadius: 'var(--radius-lg)',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    background: 'var(--glass)',
+                    border: '1px solid var(--glass-border)',
+                  }}
+                >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <CheckSquare size={16} style={{ color: 'var(--brand)' }} />
-                    <span style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--text-primary)' }}>Today's Goals</span>
-                  </div>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--brand)', fontWeight: 500 }}>Active Goal OS</span>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', flex: 1, justifyContent: 'center' }}>
-                  {homeGoals.map((g) => (
-                    <div
-                      key={g.id}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '10px',
-                        background: 'rgba(255, 255, 255, 0.02)',
-                        padding: '8px 12px',
-                        borderRadius: 'var(--radius-sm)',
-                        border: '1px solid rgba(255,255,255,0.03)',
-                      }}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={g.completed}
-                        readOnly
-                        style={{
-                          accentColor: 'var(--brand)',
-                          cursor: 'pointer',
-                        }}
-                      />
-                      <span
-                        style={{
-                          fontSize: '0.8125rem',
-                          color: g.completed ? 'var(--text-secondary)' : 'var(--text-primary)',
-                          textDecoration: g.completed ? 'line-through' : 'none',
-                        }}
-                      >
-                        {g.title}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* System Performance Card (6 cols) */}
-              <div
-                className="glass-card border-glow"
-                style={{
-                  gridColumn: 'span 6',
-                  padding: '20px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '14px',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Gauge size={16} style={{ color: 'var(--accent)' }} />
-                  <span style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--text-primary)' }}>System Audit & Performance</span>
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px', flex: 1 }}>
-                  <div
-                    style={{
-                      background: 'rgba(255, 255, 255, 0.02)',
-                      padding: '12px',
-                      borderRadius: 'var(--radius-sm)',
-                      border: '1px solid rgba(255,255,255,0.03)',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '4px',
-                    }}
-                  >
-                    <span style={{ fontSize: '0.65rem', color: 'var(--text-tertiary)', textTransform: 'uppercase' }}>Routing Mode</span>
-                    <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--accent)' }}>Smart Auto Router</span>
-                  </div>
-                  <div
-                    style={{
-                      background: 'rgba(255, 255, 255, 0.02)',
-                      padding: '12px',
-                      borderRadius: 'var(--radius-sm)',
-                      border: '1px solid rgba(255,255,255,0.03)',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '4px',
-                    }}
-                  >
-                    <span style={{ fontSize: '0.65rem', color: 'var(--text-tertiary)', textTransform: 'uppercase' }}>API Latency</span>
-                    <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--success)' }}>12 ms</span>
-                  </div>
-                  <div
-                    style={{
-                      background: 'rgba(255, 255, 255, 0.02)',
-                      padding: '12px',
-                      borderRadius: 'var(--radius-sm)',
-                      border: '1px solid rgba(255,255,255,0.03)',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '4px',
-                    }}
-                  >
-                    <span style={{ fontSize: '0.65rem', color: 'var(--text-tertiary)', textTransform: 'uppercase' }}>Speech Channels</span>
-                    <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)' }}>Whisper V3 / Kokoro</span>
-                  </div>
-                  <div
-                    style={{
-                      background: 'rgba(255, 255, 255, 0.02)',
-                      padding: '12px',
-                      borderRadius: 'var(--radius-sm)',
-                      border: '1px solid rgba(255,255,255,0.03)',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '4px',
-                    }}
-                  >
-                    <span style={{ fontSize: '0.65rem', color: 'var(--text-tertiary)', textTransform: 'uppercase' }}>Security Layer</span>
-                    <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--success)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <ShieldCheck size={12} /> Active
+                    <span style={{ color: s.color }}>{s.icon}</span>
+                    <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                      {s.title}
                     </span>
                   </div>
-                </div>
-              </div>
-
-              {/* Cognitive Memory Sync Preview (4 cols) */}
-              <div
-                className="glass-card border-glow"
-                style={{
-                  gridColumn: 'span 4',
-                  padding: '20px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '14px',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Brain size={16} style={{ color: 'var(--brand)' }} />
-                  <span style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--text-primary)' }}>Cognitive Memory</span>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
-                  {memories && memories.length > 0 ? (
-                    memories.slice(0, 3).map((m) => (
-                      <div
-                        key={m.id}
-                        style={{
-                          fontSize: '0.75rem',
-                          color: 'var(--text-secondary)',
-                          lineHeight: 1.3,
-                          background: 'rgba(255,255,255,0.01)',
-                          padding: '6px 10px',
-                          borderRadius: '6px',
-                          borderLeft: '2px solid var(--brand)',
-                        }}
-                      >
-                        {m.content.length > 60 ? `${m.content.slice(0, 60)}…` : m.content}
-                      </div>
-                    ))
-                  ) : (
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', textAlign: 'center', padding: '16px 0' }}>
-                      No memories recorded yet. AUI will automatically memorize your preferences as you chat.
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Quick Action Suggestion Bento Cards (8 cols) */}
-              <div
-                style={{
-                  gridColumn: 'span 8',
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(2, 1fr)',
-                  gap: '12px',
-                }}
-              >
-                {suggestions.map((s) => (
-                  <button
-                    key={s.title}
-                    onClick={() => sendMessage(s.prompt)}
-                    className="glass-card border-glow hover-lift"
-                    style={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '8px',
-                      padding: '16px',
-                      borderRadius: 'var(--radius-xl)',
-                      cursor: 'pointer',
-                      textAlign: 'left',
-                      background: 'var(--glass)',
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ color: s.color }}>{s.icon}</span>
-                      <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-                        {s.title}
-                      </span>
-                    </div>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
-                      {s.prompt}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </div>
+                  <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
+                    {s.prompt}
+                  </span>
+                </button>
+              ))}
+            </motion.div>
           </div>
         ) : (
           /* Message list */
