@@ -11,6 +11,7 @@ import { HuggingFaceProvider } from './huggingface.js';
 import { CloudflareProvider } from './cloudflare.js';
 import { MistralProvider } from './mistral.js';
 import { CohereProvider } from './cohere.js';
+import { LyzrProvider } from './lyzr.js';
 import { logger } from '../services/logger.js';
 
 /**
@@ -97,6 +98,12 @@ export function initProviders(): void {
   if (config.cohereApiKey) {
     registry.set('cohere', new CohereProvider(config.cohereApiKey));
     logger.info('✅ Registered provider: Cohere');
+  }
+
+  // Lyzr AI Agent
+  if (config.lyzrApiKey && config.lyzrAgentId) {
+    registry.set('lyzr', new LyzrProvider(config.lyzrApiKey, config.lyzrAgentId, config.lyzrUserId));
+    logger.info('✅ Registered provider: AUI 3.0 Ultra (Lyzr)');
   }
 
   if (registry.size === 0) {

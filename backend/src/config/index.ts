@@ -26,6 +26,11 @@ export const config = {
   cloudflareApiKey: process.env.CLOUDFLARE_API_KEY || '',
   mistralApiKey: process.env.MISTRAL_API_KEY || '',
 
+  // Lyzr AI Agent
+  lyzrApiKey: process.env.LYZR_API_KEY || '',
+  lyzrAgentId: process.env.LYZR_AGENT_ID || '',
+  lyzrUserId: process.env.LYZR_USER_ID || '',
+
   // Web Search
   tavilyApiKey: process.env.TAVILY_API_KEY || '',
   googleSearchApiKey: process.env.GOOGLE_SEARCH_API_KEY || '',
