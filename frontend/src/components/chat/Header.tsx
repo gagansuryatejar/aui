@@ -14,6 +14,9 @@ export const MODELS = [
   { id: 'auto', name: 'Smart Router (Auto)', provider: 'system', icon: '🧠' },
   { id: 'consensus', name: 'Consensus (Best Answer)', provider: 'system', icon: '🏆' },
   
+  // Lyzr AI Agent
+  { id: 'lyzr-aui-3.0-ultra', name: 'AUI 3.0 Ultra (Lyzr)', provider: 'Lyzr', icon: '⚡' },
+  
   // Google
   { id: 'google/gemini-2.5-flash', name: 'Gemini 2.5 Flash', provider: 'Google', icon: '⚡' },
   { id: 'google/gemini-2.5-pro', name: 'Gemini 2.5 Pro', provider: 'Google', icon: '💎' },
