@@ -59,7 +59,7 @@ export default function ChatArea() {
 
   const isEmpty = messages.length === 0;
 
-  const userName = user?.name || 'Gagan';
+  const userName = user?.name ? user.name : user?.email ? user.email.split('@')[0] : 'Guest';
 
   const suggestions = [
     {
