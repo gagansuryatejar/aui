@@ -150,7 +150,7 @@ export default function RootLayout({
       <body>
         {/* Aurora animated background layer */}
         <div className="aurora-bg" aria-hidden="true" />
-        <div style={{ position: 'relative', zIndex: 1, height: '100vh' }}>
+        <div style={{ position: 'relative', zIndex: 1, minHeight: '100vh' }}>
           {children}
         </div>
       </body>
