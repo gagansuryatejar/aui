@@ -174,6 +174,26 @@ export default function Home() {
           </div>
         )}
       </AnimatePresence>
+
+      {/* Prerendered / Noscript crawler-friendly markup for search engines */}
+      <noscript>
+        <div style={{ padding: '2rem', maxWidth: '800px', margin: '0 auto', color: '#fff' }}>
+          <h1>AUI AI — Intelligent AI Operating System</h1>
+          <p>
+            Created and developed by <strong>R. Gagan Surya Teja</strong>, an Intermediate 1st Year student and developer of 5+ software projects.
+          </p>
+          <p>
+            AUI AI is a next-generation AI operating system featuring smart dynamic model routing across 78+ models, live sandbox code preview, autonomous workflows, and persistent memory.
+          </p>
+          <nav>
+            <ul>
+              <li><a href="/about">About Creator — R. Gagan Surya Teja</a></li>
+              <li><a href="https://github.com/gagansuryatejar/aui">Official GitHub Repository</a></li>
+              <li><a href="/dashboard">System Dashboard</a></li>
+            </ul>
+          </nav>
+        </div>
+      </noscript>
     </div>
   );
 }

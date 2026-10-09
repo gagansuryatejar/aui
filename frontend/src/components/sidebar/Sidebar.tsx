@@ -21,7 +21,9 @@ import {
   FolderGit2,
   Database,
   Cpu,
+  User,
 } from 'lucide-react';
+import { GithubIcon } from '@/components/common/Icons';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useChatStore } from '@/store/chat-store';
@@ -104,6 +106,7 @@ export default function Sidebar() {
   const primaryTools = [
     { name: 'Workspace', icon: <Home size={16} />, href: '/', active: pathname === '/' },
     { name: 'Dashboard', icon: <LayoutDashboard size={16} />, href: '/dashboard', active: pathname === '/dashboard' },
+    { name: 'About Creator', icon: <User size={16} />, href: '/about', active: pathname === '/about' },
   ];
 
   const ConversationItem = ({ conv }: { conv: ConversationListItem }) => {
@@ -641,6 +644,47 @@ export default function Sidebar() {
               <span>Sign In / Sign Up</span>
             </button>
           )}
+          {/* Creator Attribution Info */}
+          <div
+            style={{
+              padding: '6px 10px',
+              borderRadius: 'var(--radius-md)',
+              background: 'rgba(255, 255, 255, 0.02)',
+              border: '1px solid var(--glass-border)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              fontSize: '0.72rem',
+              color: 'var(--text-tertiary)',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+              <span>Created by</span>
+              <Link
+                href="/about"
+                style={{
+                  color: 'var(--text-secondary)',
+                  fontWeight: 600,
+                  textDecoration: 'none',
+                }}
+              >
+                Gagan Surya Teja
+              </Link>
+            </div>
+            <a
+              href="https://github.com/gagansuryatejar/aui"
+              target="_blank"
+              rel="noopener noreferrer"
+              title="Official GitHub Repository"
+              style={{
+                color: 'var(--text-secondary)',
+                display: 'flex',
+                alignItems: 'center',
+              }}
+            >
+              <GithubIcon size={12} />
+            </a>
+          </div>
         </div>
       </motion.aside>
     </>

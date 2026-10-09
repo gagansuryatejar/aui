@@ -3,9 +3,9 @@ import type { MetadataRoute } from 'next';
 export default function manifest(): MetadataRoute.Manifest {
   return {
     id: '/?source=pwa',
-    name: 'auiai',
-    short_name: 'aui',
-    description: 'AUI (AUI AI) is an advanced multi-provider AI chat platform featuring smart automatic model routing, live interactive website preview sandbox, custom personas, and support for over 78 free models.',
+    name: 'AUI AI — Intelligent AI Operating System',
+    short_name: 'AUI AI',
+    description: 'AUI AI is an advanced AI Operating System with smart automatic model routing across 78+ models, live code preview sandbox, and persistent memory. Created and developed by R. Gagan Surya Teja.',
     dir: 'auto',
     display: 'standalone',
     orientation: 'any',

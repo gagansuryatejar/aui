@@ -1,6 +1,14 @@
-# 🌌 AUI – Intelligent Fullstack AI Chat & Smart Routing Platform
+# 🌌 AUI AI – Intelligent AI Operating System & Multi-Model Platform
 
-A premium, state-of-the-art AI Chat client designed to showcase dynamic multi-model routing, seamless fallback behaviors, real-time web integrations, and high-performance design patterns. Built by **R. Gagan Surya Teja** to demonstrate advanced capabilities in modern web engineering, API orchestration, and UI/UX design.
+[![Live Website](https://img.shields.io/badge/Website-auiai.online-blue?style=flat&logo=googlechrome)](https://www.auiai.online)
+[![Creator](https://img.shields.io/badge/Creator-R.%20Gagan%20Surya%20Teja-blueviolet)](https://www.auiai.online/about)
+[![Official Repo](https://img.shields.io/badge/GitHub-gagansuryatejar%2Faui-black?logo=github)](https://github.com/gagansuryatejar/aui)
+
+**Official Website:** [https://www.auiai.online](https://www.auiai.online)  
+**About Creator:** [https://www.auiai.online/about](https://www.auiai.online/about)  
+**Official Repository:** [https://github.com/gagansuryatejar/aui](https://github.com/gagansuryatejar/aui)
+
+**AUI AI** is an advanced AI Operating System engineered and developed by **R. Gagan Surya Teja** (an Intermediate 1st Year student and developer of 5+ software projects). AUI AI unifies 78+ AI models across 11 providers with an autonomous smart fallback routing layer, live code sandbox preview, context-aware web search, semantic memory, and a glassmorphic desktop interface.
 
 ---
 
@@ -118,12 +126,16 @@ The frontend will run at `http://localhost:3000` and the backend will run at `ht
 
 ---
 
-## 👨‍💻 Author & Contact Information
+## 👨‍💻 Creator & Developer Attribution
 
-Created with passion by **R. Gagan Surya Teja**.
-
-- **Goal**: To build software that is highly responsive, visual, structurally clean, and bulletproof under high-traffic demands.
-- **Let's Connect**: If you are a company looking for a software engineer who can build end-to-end architectures, optimize APIs, design dynamic interfaces, and execute clean codebases, feel free to reach out!
-- **Email**: [gagansuryatejar@gmail.com](mailto:gagansuryatejar@gmail.com)
-- **LinkedIn**: [Insert Your LinkedIn URL Here]
-- **GitHub**: [gagansuryatejar](https://github.com/gagansuryatejar)
+**Creator & Lead Developer:** **R. Gagan Surya Teja**  
+- **Profile:** Intermediate 1st Year Student (Inter first year) & Independent Software Developer
+- **Track Record:** Creator of AUI AI and 5+ other software projects spanning fullstack web applications, AI API routing engines, automation systems, and developer utilities.
+- **Mission:** Engineering accessible, ultra-responsive AI computing platforms and developer tooling without artificial barriers.
+- **Official Website:** [https://www.auiai.online](https://www.auiai.online)
+- **Creator Story & Details:** [https://www.auiai.online/about](https://www.auiai.online/about)
+- **Official GitHub:** [gagansuryatejar](https://github.com/gagansuryatejar)
+- **Repositories:**
+  - Core & Backend: [gagansuryatejar/aui](https://github.com/gagansuryatejar/aui)
+  - Frontend: [gaganzxy-eng/aui](https://github.com/gaganzxy-eng/aui)
+- **Email:** [gagansuryatejar@gmail.com](mailto:gagansuryatejar@gmail.com)

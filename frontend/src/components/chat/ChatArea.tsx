@@ -16,7 +16,10 @@ import {
   Zap,
   ArrowRight,
   TrendingUp,
+  ExternalLink,
 } from 'lucide-react';
+import Link from 'next/link';
+import { GithubIcon } from '@/components/common/Icons';
 import MessageBubble from './MessageBubble';
 import InputArea from './InputArea';
 import { useChatStore } from '@/store/chat-store';
@@ -213,6 +216,124 @@ export default function ChatArea() {
                 </button>
               ))}
             </motion.div>
+
+            {/* Official Creator Attribution Section */}
+            <motion.section
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.25 }}
+              aria-label="Official Creator Attribution"
+              style={{
+                width: '100%',
+                maxWidth: '44rem',
+                margin: '20px auto 0 auto',
+                borderRadius: 'var(--radius-xl)',
+                background: 'linear-gradient(135deg, rgba(108, 99, 255, 0.08), rgba(0, 229, 255, 0.04))',
+                border: '1px solid var(--glass-border)',
+                padding: '16px 20px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '10px',
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  flexWrap: 'wrap',
+                  gap: '12px',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div
+                    style={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: '50%',
+                      background: 'linear-gradient(135deg, var(--brand), var(--accent))',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: 'white',
+                      fontSize: '0.8125rem',
+                      fontWeight: 700,
+                      boxShadow: 'var(--shadow-sm)',
+                    }}
+                  >
+                    G
+                  </div>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                        R. Gagan Surya Teja
+                      </span>
+                      <span
+                        style={{
+                          fontSize: '0.6875rem',
+                          padding: '2px 8px',
+                          borderRadius: 'var(--radius-full)',
+                          background: 'var(--brand-muted)',
+                          color: 'var(--text-brand)',
+                          fontWeight: 600,
+                        }}
+                      >
+                        Official Creator &amp; Developer
+                      </span>
+                    </div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                      Inter 1st Year Student • Built AUI AI &amp; 5+ Software Projects
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                  <Link
+                    href="/about"
+                    style={{
+                      fontSize: '0.78rem',
+                      fontWeight: 600,
+                      color: 'var(--text-primary)',
+                      background: 'var(--glass)',
+                      border: '1px solid var(--glass-border)',
+                      padding: '6px 12px',
+                      borderRadius: 'var(--radius-md)',
+                      textDecoration: 'none',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '5px',
+                    }}
+                  >
+                    <span>About Creator</span>
+                    <ArrowRight size={12} />
+                  </Link>
+
+                  <a
+                    href="https://github.com/gagansuryatejar/aui"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title="Official GitHub Repository"
+                    style={{
+                      fontSize: '0.78rem',
+                      fontWeight: 500,
+                      color: 'var(--text-secondary)',
+                      background: 'var(--glass)',
+                      border: '1px solid var(--glass-border)',
+                      padding: '6px 10px',
+                      borderRadius: 'var(--radius-md)',
+                      textDecoration: 'none',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '5px',
+                    }}
+                  >
+                    <GithubIcon size={13} />
+                    <span>GitHub</span>
+                    <ExternalLink size={10} />
+                  </a>
+                </div>
+              </div>
+            </motion.section>
           </div>
         ) : (
           /* Message list */
